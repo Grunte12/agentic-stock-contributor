@@ -165,6 +165,15 @@ class App:
                 "note": "accepted_asset_ids covers every portfolio page the read reached (extension 0.10.0 or later); compare accepted_ids_read "
                         "with accepted_total. Names (accepted) exist for page 1 only; for later pages match by asset id."}
 
+    def stock_outcome_report(self, groups_csv=None, tags_csv=None, submitted_folder=None, ledger_out=None, min_n=5, qc_decisions=None):
+        """Accept and reject counts and rates per group (sub-niche or batch) and per content tag, from stored portal reads."""
+        from . import outcomes
+        rep = outcomes.build(self.store, groups_csv, tags_csv, submitted_folder, min_n, qc_decisions)
+        if ledger_out:
+            rep["ledger"] = outcomes.write_ledger(rep, Path(ledger_out).expanduser())
+        rep["rows_count"] = len(rep.pop("rows"))
+        return rep
+
     def stock_knowledge(self, topic="index"):
         """Adobe Stock know-how (mindset, niche method, workflow, QC, metadata, upload). `index` lists topics; read only what you need."""
         docs = {f.stem: f for f in sorted((ROOT / "knowledge").glob("*.md"))}

@@ -5,7 +5,8 @@ description: Mindset, logic and decision rules for Adobe Stock work: buyer-first
 
 Evidence tags: **[ADOBE]** official policy (wins every conflict) · **[REPO]** measured or enforced in this project ·
 **[MULTI]** repeated by several community authors (strong hypothesis) · **[SINGLE]** one author (experiment only) ·
-**[RULE]** a default operating rule of this workflow (the owner of the install may change it). Community tips are dated anecdotes, never Adobe rules, acceptance rates or sales forecasts.
+**[RULE]** a default operating rule of this workflow (the owner of the install may change it) · **[OBS date]** seen directly in
+tool output or on a page on that date · **[USER date]** a working rule the user set. Community tips are dated anecdotes, never Adobe rules, acceptance rates or sales forecasts.
 
 ## 1. Think like the buyer, not the artist [MULTI]
 

@@ -57,6 +57,9 @@ one step at a time, and ask choices with your host's question tool. Do the work 
 | Season and attention | `stock_report lead_as_of`, `stock_fetch_attention`, `stock_import_trends`, `stock_import_related` |
 | Own downloads, groups, calibration | `stock_portfolio`, `stock_import_groups`, `stock_report portfolio/calibration` |
 | Not accepted list with Adobe's cause | `stock_outcomes_scan` then `stock_outcomes` |
+| Accept / reject rates per sub-niche and content pattern; what to make next | `stock_outcome_report`, knowledge topic `outcomes` |
+| Upscale raws (Real-ESRGAN x4plus) | `stock.py upscale` (CLI), knowledge topic `qc-upscale` |
+| Look-alike screen against earlier uploads | `stock.py similar` (CLI, Pillow), knowledge topic `qc-upscale` |
 | Stage a verified plan on the Uploads page | `stock_upload_stage`, `stock_upload_result` |
 | Apply CSV metadata and flags to the staged files | `stock_upload_metadata`, `stock_upload_result` |
 | Visual summary for the user | `stock_dashboard` |
@@ -88,6 +91,6 @@ New install? Run `doctor` and follow its `next` list; `docs/SETUP.md` has the fu
 
 `<kit>` is the folder where the toolkit was installed (`~/agentic-stock-contributor` by default). `stock.py` works from any current folder and needs no environment variable.
 
-`python3 <kit>/stock.py <cmd>`: `doctor`, `print-mcp-config`, `status`, `report`, `lint-registry`, `check-images`, `qc-tiles`,
+`python3 <kit>/stock.py <cmd>`: `doctor`, `print-mcp-config`, `status`, `report`, `lint-registry`, `check-images`, `qc-tiles`, `similar`,
 `check-qc`, `check-decisions`, `build-csv`, `prepare-plan`, `upload-stage <plan> [--only FILE]`, `upload-metadata <plan>`, `reset-staged`, `resume`, `dashboard`,
 `write-extension-token`, `install-skill --agent claude|codex|opencode|agents`. The MCP server (`serve`) also runs the extension bridge.

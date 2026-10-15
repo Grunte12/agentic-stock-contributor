@@ -50,6 +50,13 @@ class PackageTests(unittest.TestCase):
 
     def test_lint_registry(self):
         self.assertTrue(P.lint_registry(self.reg)["ok"])
+
+    def test_soft_seo_warnings_do_not_fail(self):
+        w = P._soft_seo("x", "A very long title " * 6, ["tea", "4k", "Canon"])
+        self.assertTrue(any("characters" in m for m in w))
+        self.assertTrue(any("3 keywords" in m for m in w))
+        self.assertTrue(any("camera-spec" in m and "4k" in m and "Canon" in m for m in w))
+        self.assertEqual(P._soft_seo("y", "Green tea cup", ["green tea", "cup"] + [f"k{i}" for i in range(14)]), [])
         bad = json.loads(json.dumps(REG))
         bad["scenarios"]["cookie-tray"] = dict(bad["scenarios"]["cookie-tray-flatlay"])
         bad["scenarios"]["wrapped-gifts-tree"]["prompt"] = "A tree in the style of a famous painter, in a living room."

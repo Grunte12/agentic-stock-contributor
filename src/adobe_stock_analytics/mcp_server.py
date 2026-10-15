@@ -38,6 +38,8 @@ TOOLS = {
                     obj({"page": {"enum": ["portfolio", "uploads"]}}, ["page"])),
     "stock_outcomes_scan": ("Queue a read-only read of the Not accepted list (/en/uploads/rejected) with Adobe's cause per asset. One queue job makes one page load plus one paced read per asset.", obj({})),
     "stock_outcomes": ("Latest stored Not accepted list: asset id, original name, Adobe cause (quality / similar / other), plus accepted asset ids from the latest portfolio read.", obj({})),
+    "stock_outcome_report": ("Accepted / quality-rejected / similar-rejected / pending counts, rates and 95% intervals per group (sub-niche or batch) and per content tag, from the latest stored outcomes and portfolio reads. groups_csv: group plus asset_id, name or name_contains; tags_csv: asset_id or name plus tag columns; submitted_folder lists submitted JPEGs so undecided ones count as pending; ledger_out writes the joined per-file CSV; qc_decisions (the batch's qc_decisions.json) adds tag local_qc to measure how many Adobe refusals the local QC caught. Read knowledge topic outcomes before drawing conclusions.",
+                             obj({"groups_csv": STR, "tags_csv": STR, "submitted_folder": STR, "ledger_out": STR, "min_n": INT, "qc_decisions": STR})),
     "stock_portfolio": ("Queue a read-only read of the user's own contributor dashboard (downloads, earnings, per-asset downloads).", obj({})),
     "stock_knowledge": ("Adobe Stock know-how as markdown: mindset, niche method, production workflow, QC, metadata, upload and portal flow, community evidence. topic=index lists them with when to read each; read mindset first, then only what the task needs.",
                         obj({"topic": STR})),

@@ -79,6 +79,20 @@ Supply bands (one author's heuristic, not Adobe data) [SINGLE]:
 - **White-space mockup sets**: the same logo-ready blank area across
   contexts (clinic, pilates, office) sold as a set.
 
+### Checks that saved wasted batches [REPO]
+
+- A GO supply band is supply only. Open the top results sorted by downloads: if they are all real photos and no AI images,
+  AI images may not sell there; say so before choosing it.
+- Never divide a Google Trends index by an Adobe result count: the units differ. Trends is a 0-100 relative index per request;
+  compare terms only inside one request (same market, type, window).
+- Event niches: act only with a dated catalyst, mid-tail supply under about 1,000 and few results for the exact buyer phrase;
+  re-check counts just before generating. Moon-dated events (Ramadan, Eid) are approximate and region-dependent.
+- Generic isolated objects, empty pedestals, blank cards and object-on-plate variants were refused as Similar content; give
+  each scene a place, a use or an action.
+- Confirm the sub-niche brief with the user before generating the whole set: one run drifted into generic lifestyle scenes and
+  was stopped after 7 of 20.
+- Adobe's Stock Search API is for enterprise customers; there is no official download or sales count for contributors.
+
 ## 4. Score and choose
 
 Score 0-2 on each; keep sub-niches scoring 7+ of 10, and say the score is a

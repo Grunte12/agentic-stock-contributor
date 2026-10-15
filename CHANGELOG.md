@@ -1,5 +1,15 @@
 # Changelog
 
+## Toolkit 0.12.0
+
+- Outcome analytics: `stock_outcome_report` / `outcome-report` joins Adobe's verdicts (Not accepted list with cause, accepted portfolio, downloads) with the user's groups and blind content tags; counts, accept rate with a Wilson 95% interval, quality vs similar refusals, pending files, `too_few` flag and a per-file ledger CSV. New knowledge topic `outcomes`: how to read patterns honestly, pre-registered predictions, canaries, and choosing the next sub-niche with the user.
+- `upscale`: Real-ESRGAN `realesrgan-ncnn-vulkan` (model realesrgan-x4plus) then a Lanczos resize to the long edge (default 3840; 0 keeps the full x4 size), JPEG q95; dry run by default, never overwrites, never falls back to a plain resize, writes `upscale_manifest.json`. `qc-upscale` recommends it and lists alternatives; the user chooses.
+- `similar`: look-alike screen (average hash, Hamming distance) within new finals and against earlier submitted folders; pairs and groups over 3 near-variants; a proxy, never auto-drops.
+- Knowledge distilled from the authoring workspace's run reports (2026-08 to 10): QC prompt now fails upscale artifacts (waxy skin, halos, seams) and names the real tile files (`frame.jpg`, `r1c1.jpg`); "The post-upscale veto" with hash-matched Adobe outcomes per route; outcome evidence rules (identity, attested vs verified, calibration floor, one variable at a time); generation error kinds, output-to-job checks, prompt length and craft; metadata category and internal-word checks; portal limits, lags and routes; niche checks (top-by-downloads AI share, no Trends/count ratio, event rule).
+- `lint-registry` adds soft SEO `warnings` (title over 70, keyword count outside 15-35, title words missing from keywords 1-10, camera specs); they never fail the check.
+- `outcome-report --qc` / `qc_decisions`: tag `local_qc` compares the local QC verdict with Adobe's, so QC recall is measured per batch.
+- INSTALL step 6: the person chooses to load the extension themselves or let the agent do it on screen.
+
 ## Toolkit 0.11.0
 
 - Project name: Agentic Stock Contributor (repo `agentic-stock-contributor`). Main hosts: Claude Code, Codex, Cursor and Antigravity (`connect --agent antigravity`, `install-skill --agent antigravity`); OpenCode also works. INSTALL tells the agent to adapt to each computer and ask the person for every open choice.

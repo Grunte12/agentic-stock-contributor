@@ -49,12 +49,27 @@ The goal loop must still stop and ask whenever an item is open; a goal never let
 ## Rules
 
 - **Canary first.** Generate only the canary size the user chose, open the images, and report. Continue only after the user says go.
-  If the canary fails, stop and show the real error; do not run the rest.
+  If the canary fails, stop and show the real error; do not run the rest. If the canary images fail QC the same way, change the
+  prompts (a new run name and folder) before generating more. Replacements for terminal failures go in a new small run, so the
+  original records stay intact.
 - **Failure policy** is the user's answer. Default behaviour when unanswered is to stop and ask. A content failure means write a new,
   different concept, not a reroll of the same prompt.
 - **Auth and quota errors** (sign-in, 401/403/404 from a session, rate or quota limits) are terminal for the run. Report cause and
   next fix; do not retry in a loop and do not try to read or move credentials.
 - **Spend and terms** are the user's. Check that the provider's terms allow commercial stock use, and that Adobe's AI-content
   rules are met, only as the user states it; do not assert it.
+- **Errors by kind** [REPO]: auth, quota, model-limit and "invalid output" (no image) are terminal for that job: keep the receipt,
+  do not resend the same prompt. Rate limit, network and timeout are transient: retry once, then stop and ask. Stop the whole run
+  after two terminal failures in a row and diagnose. A rate limit on the result poll can block a queue for about 2 hours.
+- **Check every output belongs to its job**: the subject matches the scenario, and the file came from this request. A stale image
+  from an older conversation or session is a failure, never a result. Start a fresh conversation per image when the provider is a chat.
+- **Several images for one prompt**: keep one by a fixed rule (for example the first) and archive the rest; do not drop the call.
+- **One failed image never blocks the batch**: quarantine per image; promote the passing ones.
+- **Prompt length**: about 600-1000 characters worked; about 2000-character prompts returned text instead of an image (one chat
+  provider, 2026-08) [REPO].
+- **Prompt craft from refusals and fails** [REPO]: keep text-bearing objects out (receipts, labels, packaging, documents, book
+  spines, screens with UI): they come back with pseudo-text. One dominant subject at 30%+ of the frame; few props; no tiny repeated
+  objects, flames or wet reflective surfaces; no glass with people behind it (ghost duplicates). A scene that fails twice: keep the
+  buyer intent, simplify the composition in a new prompt. Repeating a prompt does not keep the same person across a series.
 - Keep the provider name, model and settings in the run report. They do not go into titles or keywords [ADOBE].
 - Generation success is not QC and not Adobe acceptance. Next: upscale (stage 7), then QC the finals (stage 8).

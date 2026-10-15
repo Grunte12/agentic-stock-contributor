@@ -57,7 +57,8 @@ Fix all of them, then validate again.
 ## Soft conventions (warnings, from the community)
 
 Soft conventions (your checklist). Breaking one is allowed with
-a reason.
+a reason. `lint-registry` lists the checkable ones under `"warnings"` (title length, keyword count, title words in
+keywords 1-10, camera specs); warnings never set `"ok"` to false.
 
 | Convention | Tag |
 |---|---|
@@ -70,6 +71,13 @@ a reason.
 | Singular nouns; no camera specs ("4k", "ISO", camera brands) | [SINGLE] |
 | Only keywords that match the image; no "might sell" padding | [MULTI] |
 | Add place names the model cannot know (e.g. a real city) only when true and allowed | [SINGLE] |
+
+## Checks learned on real runs [REPO]
+
+- **Category**: never let a default pass. One run filed every row under one default category; another put food under People.
+  Pick the category from the visible subject, row by row.
+- **No internal words**: scenario ids, campaign names, "recovery", "replacement", treatment names do not go into titles or keywords.
+- **Concept images**: describe them as conceptual or staged ("concept of ..."), never as a real, live product or event.
 
 ## The word "AI"
 

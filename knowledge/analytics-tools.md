@@ -182,6 +182,7 @@ edit the config yourself; the user owns it.
 | Label assets by sub-niche | `stock_import_groups(path)` | CSV with columns `asset_id,group` |
 | Phrase per group (calibration) | `stock_import_group_keywords(path)`, then `stock_report(calibration=true)` | CSV `group,keyword[,media_type]`; association, not a forecast |
 | Not accepted list with cause | `stock_outcomes_scan`, `stock_wait`, then `stock_outcomes` | cause 9 = Tech problems (Quality Issues), 8 = Similar content |
+| Rates per sub-niche and content tag | `stock_outcome_report(groups_csv, tags_csv, submitted_folder, ledger_out)` | method and reading rules: knowledge topic `outcomes` |
 | Keywords of sold assets | `stock_asset([ids])`, then `stock_report(own_keywords=true)` | never copy keywords onto new images |
 | Visual summary | `stock_dashboard` | returns a localhost link for the user |
 

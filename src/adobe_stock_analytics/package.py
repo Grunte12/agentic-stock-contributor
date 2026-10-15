@@ -90,7 +90,7 @@ def lint_registry(path, max_title=200, min_keywords=5, max_keywords=49):
     sc = reg.get("scenarios") if isinstance(reg, dict) else None
     if not isinstance(sc, dict) or not sc:
         return {"ok": False, "problems": ["registry needs a non-empty 'scenarios' object keyed by scenario id"], "count": 0}
-    problems = []
+    problems, warnings = [], []
     ids = list(sc)
     for a in ids:
         for b in ids:
@@ -113,6 +113,7 @@ def lint_registry(path, max_title=200, min_keywords=5, max_keywords=49):
             kw0 = set(re.findall(r"[a-z]{3,}", str(kws[0]).lower()))
             if not any(x == y or x.startswith(y) or y.startswith(x) for x in tw for y in kw0):
                 problems.append(f"{sid}: first keyword '{kws[0]}' shares no word with the title")
+        warnings.extend(_soft_seo(sid, title, kws))
         prompt = str(s.get("prompt", ""))
         if len(prompt) < 40:
             problems.append(f"{sid}: prompt missing or too short")
@@ -120,7 +121,32 @@ def lint_registry(path, max_title=200, min_keywords=5, max_keywords=49):
             for m in re.finditer(pat, prompt, re.I):
                 if not (negatable and NEGATION_OK.search(prompt[:m.start()][-60:])):
                     problems.append(f"{sid}: prompt contains '{m.group(0)}'")
-    return {"ok": not problems, "count": len(sc), "problems": problems}
+    return {"ok": not problems, "count": len(sc), "problems": problems, "warnings": warnings,
+            "note": "warnings are soft SEO conventions (knowledge topic metadata-seo); breaking one is allowed with a reason"}
+
+
+CAMERA_SPEC = re.compile(r"\b(\d+k|uhd|hdr|iso ?\d*|f/?\d+(\.\d+)?|\d+ ?mm|dslr|canon|nikon|sony|fujifilm|leica)\b", re.I)
+
+
+def _soft_seo(sid, title, kws):
+    """Soft conventions from the community (warnings only): title <= 70, 15-35 keywords, title nouns in keywords 1-10, no camera specs."""
+    out = []
+    if len(title) > 70:
+        out.append(f"{sid}: title is {len(title)} characters (about 70 or fewer reads best)")
+    if isinstance(kws, list):
+        if not 15 <= len(kws) <= 35:
+            out.append(f"{sid}: {len(kws)} keywords (15-35 suggested)")
+        top = " ".join(str(k).lower() for k in kws[:10])
+        missing = [w for w in re.findall(r"[a-z]{4,}", title.lower()) if w not in STOP and w.rstrip("s") not in top]
+        if missing:
+            out.append(f"{sid}: title words not in keywords 1-10: {', '.join(sorted(set(missing)))}")
+        spec = [str(k) for k in kws if CAMERA_SPEC.search(str(k))]
+        if spec:
+            out.append(f"{sid}: camera-spec keywords: {', '.join(spec)}")
+    return out
+
+
+STOP = {"with", "from", "into", "onto", "over", "under", "near", "their", "this", "that", "while", "during", "using", "beside", "behind", "front", "next", "and", "the", "for"}
 
 
 def match_scenarios(registry, names):

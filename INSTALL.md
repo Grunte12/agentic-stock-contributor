@@ -42,9 +42,9 @@ Never pick for them because it seems obvious. Record nothing they did not say.
 ## Step 1. Get the code (pinned)
 
 ```bash
-git clone --branch v0.11.0 --depth 1 https://github.com/Grunte12/agentic-stock-contributor ~/agentic-stock-contributor
+git clone --branch v0.12.0 --depth 1 https://github.com/Grunte12/agentic-stock-contributor ~/agentic-stock-contributor
 cd ~/agentic-stock-contributor
-git rev-parse HEAD   # must equal the commit hash in the GitHub release notes for v0.11.0 (Releases page)
+git rev-parse HEAD   # must equal the commit hash in the GitHub release notes for v0.12.0 (Releases page)
 ```
 
 If `git` is missing, ask the person to install it (git-scm.com) or download the release zip and unpack it to the same folder.
@@ -103,14 +103,16 @@ Cursor documents `~/.agents/skills` and `~/.claude/skills` as skill folders (cur
 
 ## Step 6. Chrome extension (**PERSON**, about 2 minutes)
 
-The extension step is manual on purpose: do not attach a remote-debugging port to the person's Chrome or drive it with automation.
-That would give an agent full control of a logged-in browser, which this project avoids.
+Ask the person: "Do you want to load the Chrome extension yourself (about 2 minutes, I guide you), or should I do it with my
+browser or computer-use tool?" Recommend doing it themselves. If they choose you and your host has such a tool, do the same four
+steps below on screen, showing each one; the folder picker is a normal file dialog. Never attach a remote-debugging port to their
+Chrome or start Chrome with automation flags: that would give an agent full control of a logged-in browser.
 
 ```bash
 python3 stock.py write-extension-token
 ```
 
-Then tell the person, one line at a time, waiting for "done":
+Then (person's choice: they do it, or you do it on screen) one step at a time, waiting for "done":
 1. Open Chrome and type `chrome://extensions` in the address bar.
 2. Turn on **Developer mode** (top right).
 3. Click **Load unpacked** and choose the folder `<install folder>/extension`.

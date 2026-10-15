@@ -72,6 +72,24 @@ def main(argv=None):
     qt = sub.add_parser("qc-tiles", help="(needs Pillow) write a 1600 px frame and 3x3 native tiles per image for visual QC")
     qt.add_argument("folder")
     qt.add_argument("--out", required=True)
+    sm = sub.add_parser("similar", help="(needs Pillow) look-alike screen: average-hash pairs within new finals and against earlier submitted folders")
+    sm.add_argument("folder")
+    sm.add_argument("--against", action="append", default=[], help="a folder of earlier submitted files (repeatable)")
+    sm.add_argument("--threshold", type=int, default=8, help="max Hamming distance of 64-bit average hashes counted as a pair")
+    up = sub.add_parser("upscale", help="(needs Pillow) Real-ESRGAN x4plus via realesrgan-ncnn-vulkan, then resize to the long edge, JPEG (dry run without --confirm-write)")
+    up.add_argument("folder")
+    up.add_argument("--out", required=True)
+    up.add_argument("--bin", default=None, help="path to realesrgan-ncnn-vulkan if it is not on PATH")
+    up.add_argument("--long-edge", type=int, default=3840, help="final long edge in px; 0 keeps the full x4 size (a 1448x1086 raw gives 5792x4344, about 25 MP)")
+    up.add_argument("--quality", type=int, default=95)
+    up.add_argument("--confirm-write", action="store_true")
+    orp = sub.add_parser("outcome-report", help="accept / reject counts and rates per group and per content tag from the stored outcomes and portfolio reads")
+    orp.add_argument("--groups", default=None, help="CSV: group plus asset_id, name or name_contains")
+    orp.add_argument("--tags", default=None, help="CSV: asset_id or name plus content tag columns")
+    orp.add_argument("--submitted", default=None, help="folder of submitted JPEGs (undecided ones count as pending)")
+    orp.add_argument("--ledger", default=None, help="write the joined per-file CSV here")
+    orp.add_argument("--min-n", type=int, default=5)
+    orp.add_argument("--qc", default=None, help="qc_decisions.json of the submitted batch: adds tag local_qc to compare QC verdicts with Adobe's")
     v = sub.add_parser("verify-doc")
     v.add_argument("path")
     d = sub.add_parser("dashboard", help="write a static HTML dashboard from stored metrics")
@@ -168,6 +186,17 @@ def main(argv=None):
                 out = {"ok": True, "images": [P.qc_tiles(p, a.out) for p in sorted(Path(a.folder).glob("*.jp*g"))]}
         except (StageError, OSError, ValueError) as e:
             out = {"ok": False, "error": str(e)}
+    elif a.cmd == "similar":
+        from . import similar as SM
+        try:
+            out = SM.screen(a.folder, a.against, a.threshold)
+        except (OSError, ValueError) as e:
+            out = {"ok": False, "error": str(e)}
+    elif a.cmd == "upscale":
+        from . import upscale as U
+        out = U.run(a.folder, a.out, a.bin, a.long_edge, a.quality, confirm_write=a.confirm_write)
+    elif a.cmd == "outcome-report":
+        out = app.stock_outcome_report(a.groups, a.tags, a.submitted, a.ledger, a.min_n, a.qc)
     elif a.cmd == "upload-stage":
         out = app.stock_upload_stage(a.plan, a.only)
     elif a.cmd == "upload-metadata":

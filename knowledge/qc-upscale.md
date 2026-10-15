@@ -24,19 +24,25 @@ the 1600 px frame and 3x3 native tiles. Reviewer prompt ("Read tool" means whate
 file read the reviewer has):
 
 ```text
-QC one Adobe Stock image. Use only the Read tool. Read: [folder]/full.jpg, then
-all 9 tile_r{1-3}c{1-3}.jpg (native-resolution tiles, r = row from top).
+QC one Adobe Stock image. Use only the Read tool. Read: [folder]/frame.jpg, then
+all 9 r{1-3}c{1-3}.jpg (native-resolution tiles, r = row from top).
 Intended subject: [scenario one-liner].
 FAIL only for a defect you can point to: wrong finger count or a broken joint,
 an extra or ghost limb, melted or duplicated objects, letters/numbers/logos or
 garbled pseudo-text, a brand-like product, an oil-paint smear on the main subject,
 or a subject that does not match the intended one.
-NOT a defect: soft fingers or soft skin from depth of field or upscaling,
-background blur, intended glow lines or light overlays.
+Also FAIL for upscale artifacts on the main subject: waxy or plastic skin,
+painted or smeared texture, halos or bright outlines around edges, tiling seams,
+wiry hair outlines, invented texture on flat surfaces.
+NOT a defect: depth-of-field blur, a soft background, intended bokeh,
+intended glow lines or light overlays.
 Reply with JSON only:
 {"file": "...", "verdict": "pass|fail", "reason": "one line",
  "defects": [{"tile": "r?c?", "what": "..."}]}
 ```
+
+`[scenario one-liner]` comes from the registry (or the CSV title), never from the file name: a name is a weak description and
+makes "subject does not match" verdicts unreliable.
 
 Then follow SKILL.md stage 8: merge into `qc_decisions.json`, a second look
 confirms or overturns each fail at its named tile, passes are not re-opened.
@@ -58,20 +64,22 @@ Rules for every setup:
 
 1. One image per reviewer job. Reason: a reviewer that sees several images
    mixes them up and misnames files.
-2. The reviewer reads `full.jpg` and all 9 tiles of that image only.
+2. The reviewer reads `frame.jpg` and all 9 tiles of that image only.
 3. The reviewer returns the JSON reply only. Keep every reply unchanged in
    `qc_reviewer_replies.json`.
 4. A reply that is not valid JSON, names another file, or skips tiles is not a
    verdict. Run that image again in a fresh job once; if it fails again, the
    lead reviews it and the report says so.
 5. Never change a verdict without opening the image yourself.
+6. A check that could not run (no reviewer, no Pillow, a screen that errored) leaves the image unknown and the package not ready.
+   It is never a pass and never just a warning.
 
 ### Merging replies and confirming fails
 
 1. Collect all replies. Count them: one per final. A missing reply means the
    image was not reviewed (not a pass).
 2. Put every `pass` file name in `pass`.
-3. For every `fail`, the second look opens `full.jpg` and the named tile, then
+3. For every `fail`, the second look opens `frame.jpg` and the named tile, then
    the neighbouring tiles if the defect is not there. Decide:
    - confirmed: the defect is real and is in the fail list above. The file goes
      in `fail` with a one-line reason.
@@ -121,6 +129,17 @@ hold, mostly for "soft fingers". That is why the prompt is now pass/fail with
 an explicit not-a-defect list. The reviewer also named the wrong tile once, so
 search neighbouring tiles when a named defect is not where it said.
 
+Why upscale artifacts are on the fail list (2026-10-16) [REPO, one account]: the earlier prompt called soft skin
+from upscaling "not a defect". The batches with a strict post-upscale artifact veto did best at Adobe (see
+"The post-upscale veto" below); the batch reviewed with the lenient prompt was refused 13 of 13 for quality.
+That batch was also all people scenes, so this is a hypothesis: count what the new rule fails and compare outcomes.
+
+More reviewer rules from real runs [REPO]:
+- A whole batch with zero fails is unusual (one run passed 28 of 28). Open a few finals yourself at native tiles before trusting it.
+- Rear or side views lower face risk, not hair, ear, hand and body defects; check those tiles.
+- Validate every reply yourself (JSON shape, file name, all tiles read). Never trust a model's bare "pass".
+- Scores from another rubric or scale are not comparable; keep one rubric per project.
+
 | Check | Fail when | Tag |
 |---|---|---|
 | Anatomy | extra/fused fingers, wrong joints, distorted face, odd proportions | [ADOBE][MULTI] |
@@ -151,8 +170,8 @@ artifacts that the prompt tells the reviewer to ignore.
 
 | Item | Rule | Tag |
 |---|---|---|
-| Engine | a local AI upscaler (Real-ESRGAN x4plus, Upscayl or similar); do not silently fall back to a plain resize. This toolkit has no upscaler: check what is already installed, then ask the user which one to use; installing one needs their yes | [REPO] |
-| Size | 3840 px long edge, JPEG quality 95 | [REPO] |
+| Engine | a local AI upscaler; never silently fall back to a plain resize. Recommend, then let the user choose (see "Which upscaler") | [REPO] |
+| Size | 3840 px long edge, JPEG quality 95 (the size this project used). Keeping the full x4 output (about 25 MP from a 1448x1086 raw) is an option the user may choose; see "Which size" | [REPO] |
 | Minimum | Adobe minimum resolution is stated differently across older pages; check the live page before upload | [ADOBE] unresolved |
 | Factor | do not always use 4x; 2x-3x is enough for a ~1024x1536 source to pass 4 MP; 4x can make hair and skin look unnatural | [MULTI] |
 | Size (official) | Adobe help pages read 2026-10-13: JPEG, sRGB, 4-100 MP, file <= 45 MB; view at 100%; no watermark. Our gate matches. A 2026-10-10 post (Author E) says "45 MP / 100 MB" (wrong against Adobe) and recommends 4000x2667+, 6000x4000 premium; our 3840 px long edge (11.8-17.6 MP) is above it. Larger files need a real upscale, not a bigger 4x | [ADOBE] + [SINGLE] |
@@ -163,6 +182,42 @@ artifacts that the prompt tells the reviewer to ignore.
 Alternatives reported by the community: Upscayl
 (free, local), Photoshop 2026 built-in 2x/4x (Firefly or Topaz). [SINGLE]
 
+### Which upscaler (recommend; the user chooses)
+
+First check what is installed (`realesrgan-ncnn-vulkan` on PATH, the Upscayl app, Photoshop, Topaz). Then ask with the question tool,
+recommended option first. Installing anything needs the user's yes; download only from the official release page.
+
+| option | for whom | evidence |
+|---|---|---|
+| **Real-ESRGAN `realesrgan-ncnn-vulkan`, model `realesrgan-x4plus`, plus the post-upscale veto (recommended)** | anyone; the agent runs it: `python3 <kit>/stock.py upscale <raw_dir> --out <final_dir> --bin <path>` (dry run first, then `--confirm-write`; the resize needs Pillow) | used for every batch of this project 2026-08 to 10. In the best batch, finals that survived a strict artifact veto were accepted 22 of 26; the batch refused 13 of 13 used the same upscaler without the veto [REPO, one account]. About 27-30 s per 1254-1448 px raw on an Apple M5 (GPU-bound; a whole folder per call is not faster), so 100 images take about 45-50 minutes unattended. Free, local, macOS/Windows/Linux, no Python. Releases: github.com/xinntao/Real-ESRGAN |
+| Upscayl (free desktop app built on the same Real-ESRGAN-family models; similar output and speed, no terminal) | a user who prefers clicking; the user runs it, then `check-images` | one Adobe Community post (2025-12-23) reported approval falling with Upscayl; no confirmed cause [SINGLE] |
+| Topaz Gigapixel, Photoshop Super Resolution (paid) | users who already own them | community advice; not tested here [SINGLE] |
+
+### The post-upscale veto (keep it) [REPO, one account]
+
+x4 output can look worse than the raw: plastic smoothing, seams, halos, missing micro-detail. A strict reviewer
+failed 24 of 50 and 30 of 50 x4 finals in two batches (2026-08). Those were replaced by a plain high-quality resize of the
+raw (`sips`, 2400-3000 px long edge) or by a new, simpler scene. Adobe's verdicts on the batch that did this (hash-matched, 2026-10):
+
+| route | accepted | quality | similar |
+|---|---|---|---|
+| Real-ESRGAN finals that passed the veto | 22 | 2 | 2 |
+| plain resize, replacing vetoed finals | 22 | 2 | 0 |
+
+So both routes did well **after the veto**; a plain resize of five other files without a matched control was 2 of 5.
+Rules: run the artifact checks in the QC prompt on every final; for a vetoed final, compare its crop with the same crop of
+the raw first (a defect may already be in the raw), then either regenerate a simpler scene or, with the user's yes, use a
+plain resize and **label it as a resize** in the lineage (`upscale_manifest.json` records the backend). Never call a resize an AI upscale.
+Check the license of any other model weights before using them commercially; no stated license, do not use.
+
+### Which size
+
+Adobe accepts 4-100 MP [ADOBE]. Some sellers recommend about 24 MP (for example 6000x4000) as "best quality" [SINGLE, user report 2026-10-15];
+that is a camera-sized file, not an Adobe rule. An x4 upscale of a 1448x1086 raw gives 5792x4344 (about 25 MP) with `--long-edge 0`;
+this project used 3840 px (about 11 MP) and saw no link between size and refusals. Adobe reviewers look at 100%, and a bigger
+upscale also shows its texture bigger ("Don't increase resolution in ways that degrade quality", Adobe FAQ). Untested here: if the user
+wants 24 MP, propose a canary of a few files at full x4 size beside 3840 px files of similar content, and compare verdicts.
+
 ## After upscale
 
 ```bash
@@ -170,5 +225,11 @@ python3 <kit>/stock.py check-images <final_dir>
 ```
 
 Record mean difference final vs raw if you compute it. The native-tile review
-is the zoom check. Look for look-alike pairs by eye on a contact sheet (this tool has no similarity screen); the pairs that matter are the ones
-inside one upload wave.
+is the zoom check. Screen look-alikes: `python3 <kit>/stock.py similar <final_dir> --against <earlier submitted folder> [--against ...]`
+(needs Pillow; average hash, Hamming distance 8 or less). Include folders whose upload state is unknown: treat them as possibly
+submitted. It is a proxy [REPO]: Adobe refused a file as similar whose nearest local pair a screen had rated clear (2026-08),
+and Adobe compares against its whole collection, not only yours. For each pair keep the stronger image or split the two across waves after a look;
+more than 3 near-variants of one concept go to the user. Never drop files automatically. Record each pair decision in the run
+report with both files' SHA-256; replacing either file makes that decision stale, so screen again.
+A technical-gate failure (size, format, file size) is fixed by finding why the upscale step produced it and rerunning that step,
+not by re-encoding the file by hand.
