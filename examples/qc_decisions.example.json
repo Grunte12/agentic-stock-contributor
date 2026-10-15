@@ -1,0 +1,12 @@
+{
+  "stage": "post_upscale",
+  "pass": ["01_cookie-tray-flatlay.jpg"],
+  "fail": [],
+  "notes": {},
+  "sha256": {"01_cookie-tray-flatlay.jpg": "<64 hex characters of the final file>"},
+  "reviewer": "<model or person that looked, as the host reports it>, full frame + 9 native tiles",
+  "mode": "single-pass",
+  "confirmed_by": "",
+  "reviewed_at": "YYYY-MM-DD",
+  "boundary": "Local defect screen only; not Adobe acceptance."
+}

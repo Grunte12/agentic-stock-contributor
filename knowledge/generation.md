@@ -1,0 +1,60 @@
+---
+description: Stage 6, image generation with any provider. The decision checklist the agent must ask the user (never decide), the provider-neutral contract, canary and failure rules.
+---
+# Generation (stage 6): any provider, the user decides
+
+This tool does not generate images and is not tied to one generator. The user may use a ChatGPT bridge, Codex image
+generation, any image API, Google Flow, a local model or anything else. Your job here is to **ask, record and
+verify**, not to choose.
+
+## Grill the user until nothing is open (goal mode)
+
+The method follows the "grilling" skill by Matt Pocock (MIT, `skills/productivity/grilling` in github.com/mattpocock/skills; `grill-me` is its short trigger): treat the choices as a tree, ask in rounds,
+recommend an answer, look up facts yourself, leave decisions to the user, and finish only when nothing is left open.
+
+1. Copy `examples/generation_decisions.example.json` to `runs/<RUN>/generation_decisions.json`.
+2. Run `python3 <kit>/stock.py check-decisions runs/<RUN>/generation_decisions.json`. Its `open` list is every question
+   still unanswered.
+3. **Ask in rounds, by dependency.** A round holds only questions you can ask now: ones whose earlier answers are already known.
+   Typical order: round 1 `provider`; round 2 `model`, `account`, `terms`, `spend`; round 3 `scenario_count`, `variants`, `size`,
+   `output_folder`, `canary`, `on_failure`; last `go_ahead`. A provider change reopens round 2 and later.
+4. **Give a recommended answer** with each question, worded so "yes" accepts it, and always allow "other". Ask through the host's
+   question popup (for example `AskUserQuestion` in Claude Code, the question tool of another host; plain numbered chat if there is
+   none). Up to 4 questions per popup; split a bigger round across popups.
+5. **Find facts yourself, ask only decisions.** Look up anything checkable (is a CLI installed, is an account signed in, what the
+   provider's documented limits are) with a cheap sub-agent or a read-only command, and show the finding next to the question. Do not
+   ask the user what you can look up. Never use a lookup to decide for them.
+6. Write only what the user answered: `{"value": ..., "decided_by": "user", "asked_on": "YYYY-MM-DD"}`. A recommended answer that
+   the user did not accept is not an answer. If the user says "I do not know", keep the item open, explain the trade-off in two
+   lines, and ask again.
+7. Repeat from step 2. Stop when `check-decisions` returns `"ok": true` (it records dated answers; it cannot prove who typed them, so
+   write only what the user said). `go_ahead` must be `yes`. A new run, a provider change or a failed canary reopens the items that
+   changed. Do not generate anything until the user confirms the summary of their answers.
+
+Never choose a provider, model, account, spend limit or count on your own, and never switch any of them silently mid-run.
+
+### Optional: run it under a host goal command
+
+Claude Code and Codex CLI have a `/goal` command that keeps the agent working until a checkable condition holds. A condition that
+fits this stage: `check-decisions runs/<RUN>/generation_decisions.json prints "ok": true and the canary images were shown to the user`.
+The goal loop must still stop and ask whenever an item is open; a goal never lets the agent answer for the user.
+
+## Contract any provider must meet
+
+- Input: the prompt of each scenario in `registry.json`. One output per prompt is the suggested default (Adobe wants distinct concepts); the user's `variants` answer decides.
+- Output: raw images in the folder the user chose (suggested `runs/<RUN>/raw`), one per scenario, named `<scenario-id>.<ext>` (extension of the provider).
+- Record per scenario: ok or failed, the provider's own error text (secrets removed), and the time. A table in the run report is enough.
+- If your provider has a queue, receipts or a job runner, use it; if not, a plain loop is fine. The tool does not care.
+
+## Rules
+
+- **Canary first.** Generate only the canary size the user chose, open the images, and report. Continue only after the user says go.
+  If the canary fails, stop and show the real error; do not run the rest.
+- **Failure policy** is the user's answer. Default behaviour when unanswered is to stop and ask. A content failure means write a new,
+  different concept, not a reroll of the same prompt.
+- **Auth and quota errors** (sign-in, 401/403/404 from a session, rate or quota limits) are terminal for the run. Report cause and
+  next fix; do not retry in a loop and do not try to read or move credentials.
+- **Spend and terms** are the user's. Check that the provider's terms allow commercial stock use, and that Adobe's AI-content
+  rules are met, only as the user states it; do not assert it.
+- Keep the provider name, model and settings in the run report. They do not go into titles or keywords [ADOBE].
+- Generation success is not QC and not Adobe acceptance. Next: upscale (stage 7), then QC the finals (stage 8).

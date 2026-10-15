@@ -1,0 +1,171 @@
+{
+  "bridge": {
+    "host": "127.0.0.1",
+    "port": 8777
+  },
+  "pacing": {
+    "min_gap_seconds": 25,
+    "jitter_seconds": 10,
+    "daily_cap": 150
+  },
+  "stop": {
+    "max_consecutive_parse_failures": 2,
+    "allow_agent_resume": false
+  },
+  "top_n": 100,
+  "recency": {
+    "min_asset_id": 2100000000,
+    "note": "uncalibrated cut: ids at or above it count as new; tune against dated own assets",
+    "window_days": 180,
+    "min_anchors": 3
+  },
+  "momentum": {
+    "recent_points": 4,
+    "baseline_points": 8
+  },
+  "opportunity": {
+    "weights": {
+      "supply": 0.6,
+      "attention": 0.4
+    },
+    "supply_scores": {
+      "GO": 1.0,
+      "MAYBE": 0.5,
+      "SKIP": 0.0
+    },
+    "attention_floor": 0.5,
+    "attention_ceiling": 2.0,
+    "note": "uncalibrated: weights and the attention range are starting guesses; calibrate against own sales"
+  },
+  "bands": [
+    {
+      "name": "high_niche",
+      "max": 2000
+    },
+    {
+      "name": "medium",
+      "max": 15000
+    },
+    {
+      "name": "moderate",
+      "max": 50000
+    },
+    {
+      "name": "saturated",
+      "max": null
+    }
+  ],
+  "rating": {
+    "go": {
+      "bands": [
+        "high_niche",
+        "medium"
+      ],
+      "max_dl_top1_creator_share": 0.1
+    },
+    "skip": {
+      "bands": [
+        "saturated"
+      ],
+      "min_ai_share": 0.6
+    }
+  },
+  "events": [
+    {
+      "name": "Valentine's Day",
+      "month": 2,
+      "day": 14
+    },
+    {
+      "name": "Easter",
+      "dates": [
+        "2026-04-05",
+        "2027-03-28",
+        "2028-04-16"
+      ]
+    },
+    {
+      "name": "Mother's Day",
+      "dates": [
+        "2026-05-10",
+        "2027-05-09",
+        "2028-05-14"
+      ]
+    },
+    {
+      "name": "Back to School",
+      "month": 8,
+      "day": 15
+    },
+    {
+      "name": "Halloween",
+      "month": 10,
+      "day": 31
+    },
+    {
+      "name": "Black Friday",
+      "dates": [
+        "2026-11-27",
+        "2027-11-26",
+        "2028-11-24"
+      ]
+    },
+    {
+      "name": "Christmas",
+      "month": 12,
+      "day": 25
+    },
+    {
+      "name": "Lunar New Year",
+      "dates": [
+        "2026-02-17",
+        "2027-02-06",
+        "2028-01-26"
+      ]
+    },
+    {
+      "name": "New Year (resolutions)",
+      "month": 1,
+      "day": 1
+    }
+  ],
+  "lead": {
+    "start_weeks": 13,
+    "end_weeks": 8,
+    "note": "generate/submit window = buyer lead 8 wk (community anecdote, 2026-10) + review lag 3 wk (one account measured up to ~15 days) + 1 wk margin; community hypothesis, not an Adobe rule"
+  },
+  "calibration": {
+    "min_assets_per_bucket": 20,
+    "note": "user-chosen floor for showing a downloads-per-asset figure, not a statistical test"
+  },
+  "own_keywords": {
+    "min_sold_assets": 2,
+    "top_k": 30,
+    "note": "keywords shared by your sold assets; association only, never copy keywords onto new images"
+  },
+  "upload_stage": {
+    "enabled": false,
+    "max_files": 20,
+    "max_total_mb": 200,
+    "max_plan_age_hours": 48,
+    "stage_timeout_seconds": 120,
+    "protected_markers": [
+      "DO_NOT_UPLOAD",
+      "quarantine",
+      "holdout"
+    ],
+    "note": "Staging puts verified files into the portal's New list; it never submits. The user turns it on (enabled) for a run and off after. Protected folders can never be staged."
+  },
+  "upload_metadata": {
+    "enabled": false,
+    "people_property": "no",
+    "mark_generative_ai": true,
+    "include_in_submission": true,
+    "people_property_fictional": true,
+    "step_timeout_seconds": 90,
+    "min_keywords": 5,
+    "max_keywords": 49,
+    "max_title_chars": 200,
+    "note": "Applies the plan's CSV (title, keywords, category) to the files already in the portal's New list, then sets generative AI, people/property and include-in-submission for all of them and saves. It never clicks Submit. The user turns it on for a run and off after. people_property_fictional ticks 'People and Property are fictional' (AI-generated people). people_property is the user's answer to 'Add recognizable people or property?' (no | yes | later)."
+  }
+}

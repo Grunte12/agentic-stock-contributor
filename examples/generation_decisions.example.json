@@ -1,0 +1,18 @@
+{
+  "run": "EXAMPLE_RUN",
+  "note": "Fill a value only from the user's own answer. Leave a value empty or 'unknown' until the user answers. The agent asks again; it never fills these in.",
+  "decisions": {
+    "provider":       {"value": "", "decided_by": "", "asked_on": ""},
+    "model":          {"value": "", "decided_by": "", "asked_on": ""},
+    "account":        {"value": "", "decided_by": "", "asked_on": ""},
+    "scenario_count": {"value": "", "decided_by": "", "asked_on": ""},
+    "variants":       {"value": "", "decided_by": "", "asked_on": ""},
+    "size":           {"value": "", "decided_by": "", "asked_on": ""},
+    "output_folder":  {"value": "", "decided_by": "", "asked_on": ""},
+    "spend":          {"value": "", "decided_by": "", "asked_on": ""},
+    "terms":          {"value": "", "decided_by": "", "asked_on": ""},
+    "canary":         {"value": "", "decided_by": "", "asked_on": ""},
+    "on_failure":     {"value": "", "decided_by": "", "asked_on": ""},
+    "go_ahead":       {"value": "", "decided_by": "", "asked_on": ""}
+  }
+}

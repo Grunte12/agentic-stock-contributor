@@ -1,0 +1,5 @@
+[
+ {"kind": "search", "params": {"keyword": "christmas baking", "media_type": "photo", "ai_filter": "all", "order": "relevance"}},
+ {"kind": "search", "params": {"keyword": "christmas baking", "media_type": "photo", "ai_filter": "only_ai", "order": "relevance"}},
+ {"kind": "search", "params": {"keyword": "christmas baking", "media_type": "photo", "ai_filter": "all", "order": "downloads"}}
+]

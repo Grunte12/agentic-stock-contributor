@@ -1,0 +1,11 @@
+data/
+.venv/
+__pycache__/
+*.pyc
+node_modules/
+.DS_Store
+extension/token.js
+runs/
+private/
+.mcp.json
+*.plan.json

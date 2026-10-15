@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "adobe-stock-analytics": {
+      "command": "python3",
+      "args": ["-m", "adobe_stock_analytics", "serve"],
+      "env": {"PYTHONPATH": "/ABSOLUTE/PATH/TO/adobe-stock-analytics/src"}
+    }
+  }
+}

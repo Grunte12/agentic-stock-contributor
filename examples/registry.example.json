@@ -1,0 +1,13 @@
+{
+  "version": "example-run-1",
+  "scenarios": {
+    "cookie-tray-flatlay": {
+      "title": "Christmas cookie tray with icing on a wooden table, top view",
+      "category": 7,
+      "keywords": ["cookie tray", "christmas cookies", "icing", "baking", "wooden table", "holiday", "flatlay", "copy space", "festive", "homemade"],
+      "buyer": "Bakeries and food bloggers running Christmas promotions",
+      "use_case": "Holiday menu, recipe blog header",
+      "prompt": "Photorealistic commercial photograph, horizontal 4:3, warm window light, shallow depth of field. Top-down flatlay of a tray of iced Christmas cookies on a wooden table. No text, letters, numbers, logos, brand names or watermark. Substantial clean copy space on the right."
+    }
+  }
+}
