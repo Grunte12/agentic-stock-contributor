@@ -42,9 +42,9 @@ Never pick for them because it seems obvious. Record nothing they did not say.
 ## Step 1. Get the code (pinned)
 
 ```bash
-git clone --branch v0.12.0 --depth 1 https://github.com/Grunte12/agentic-stock-contributor ~/agentic-stock-contributor
+git clone --branch v0.12.1 --depth 1 https://github.com/Grunte12/agentic-stock-contributor ~/agentic-stock-contributor
 cd ~/agentic-stock-contributor
-git rev-parse HEAD   # must equal the commit hash in the GitHub release notes for v0.12.0 (Releases page)
+git rev-parse HEAD   # must equal the commit hash in the GitHub release notes for v0.12.1 (Releases page)
 ```
 
 If `git` is missing, ask the person to install it (git-scm.com) or download the release zip and unpack it to the same folder.

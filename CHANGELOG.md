@@ -1,5 +1,9 @@
 # Changelog
 
+## Toolkit 0.12.1
+
+- The MCP server reports the package version (it said 0.1.0); a test keeps `pyproject.toml` and the package version equal. Install checked end to end from a fresh clone on macOS (all five connect targets, skills, token, MCP tools); the Chrome extension step was not automated.
+
 ## Toolkit 0.12.0
 
 - Outcome analytics: `stock_outcome_report` / `outcome-report` joins Adobe's verdicts (Not accepted list with cause, accepted portfolio, downloads) with the user's groups and blind content tags; counts, accept rate with a Wilson 95% interval, quality vs similar refusals, pending files, `too_few` flag and a per-file ledger CSV. New knowledge topic `outcomes`: how to read patterns honestly, pre-registered predictions, canaries, and choosing the next sub-niche with the user.

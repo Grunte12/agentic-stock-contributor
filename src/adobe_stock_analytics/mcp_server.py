@@ -2,6 +2,7 @@
 import json
 import sys
 
+from . import __version__
 from .app import App
 
 STR = {"type": "string"}
@@ -72,7 +73,7 @@ def handle(app, msg):
     mid, method, params = msg.get("id"), msg.get("method"), msg.get("params") or {}
     if method == "initialize":
         return {"protocolVersion": params.get("protocolVersion", "2025-06-18"), "capabilities": {"tools": {}},
-                "serverInfo": {"name": "adobe-stock-analytics", "version": "0.1.0"}, "instructions": INSTRUCTIONS}
+                "serverInfo": {"name": "adobe-stock-analytics", "version": __version__}, "instructions": INSTRUCTIONS}
     if method == "ping":
         return {}
     if method == "tools/list":
