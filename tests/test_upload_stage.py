@@ -292,3 +292,18 @@ class KnowledgeAndSkillTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class LocalConfigTests(unittest.TestCase):
+    def test_local_json_overlays_one_section_deep(self):
+        from unittest import mock
+        from adobe_stock_analytics import config as C
+        with tempfile.TemporaryDirectory() as d:
+            local = Path(d) / "local.json"
+            local.write_text(json.dumps({"upload_stage": {"enabled": True}, "stop": {"allow_agent_resume": True}}))
+            with mock.patch.object(C, "LOCAL_CONFIG", local):
+                live = C.load_live_config()
+        self.assertTrue(live["upload_stage"]["enabled"])
+        self.assertEqual(live["upload_stage"]["max_files"], C.load_config()["upload_stage"]["max_files"])
+        self.assertTrue(live["stop"]["allow_agent_resume"])
+        self.assertFalse(C.load_config()["upload_stage"]["enabled"])

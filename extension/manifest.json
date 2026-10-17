@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Adobe Stock Analytics",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "description": "Adobe Stock page reader that reports to a local bridge. Can stage plan-verified files on the Uploads page (user enabled). No cookies, never submits; the only clicks are guarded (portfolio page numbers, upload metadata).",
   "minimum_chrome_version": "116",
   "permissions": ["scripting", "storage", "alarms"],

@@ -51,6 +51,17 @@ class PackageTests(unittest.TestCase):
     def test_lint_registry(self):
         self.assertTrue(P.lint_registry(self.reg)["ok"])
 
+    def test_negated_list_is_not_a_problem(self):
+        p = self.d / "neg.json" if hasattr(self, "d") else Path(tempfile.mkdtemp()) / "neg.json"
+        reg = json.loads(Path(self.reg).read_text())
+        sid = next(iter(reg["scenarios"]))
+        reg["scenarios"][sid]["prompt"] += " No text, letters, numbers, logos, brand names, watermark, readable labels."
+        p.write_text(json.dumps(reg))
+        self.assertFalse(any("watermark" in x for x in P.lint_registry(p)["problems"]))
+        reg["scenarios"][sid]["prompt"] += " Add a watermark in the corner."
+        p.write_text(json.dumps(reg))
+        self.assertTrue(any("watermark" in x for x in P.lint_registry(p)["problems"]))
+
     def test_soft_seo_warnings_do_not_fail(self):
         w = P._soft_seo("x", "A very long title " * 6, ["tea", "4k", "Canon"])
         self.assertTrue(any("characters" in m for m in w))

@@ -204,6 +204,10 @@ raw (`sips`, 2400-3000 px long edge) or by a new, simpler scene. Adobe's verdict
 | Real-ESRGAN finals that passed the veto | 22 | 2 | 2 |
 | plain resize, replacing vetoed finals | 22 | 2 | 0 |
 
+A later batch (2026-10-16, 3840 px): Haiku reviewers plus the lead failed 4 of 11 Real-ESRGAN finals (glitter-like bubbles with
+pseudo-text, smeared wood, oversharpened peel with a seam, wiry hair halo); the next 6 (2 at 3840, 4 at full x4) failed 0.
+Adobe outcomes for both are unmeasured yet.
+
 So both routes did well **after the veto**; a plain resize of five other files without a matched control was 2 of 5.
 Rules: run the artifact checks in the QC prompt on every final; for a vetoed final, compare its crop with the same crop of
 the raw first (a defect may already be in the raw), then either regenerate a simpler scene or, with the user's yes, use a

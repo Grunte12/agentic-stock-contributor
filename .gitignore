@@ -9,3 +9,4 @@ runs/
 private/
 .mcp.json
 *.plan.json
+config/local.json

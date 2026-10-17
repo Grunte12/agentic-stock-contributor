@@ -79,6 +79,9 @@ class OutcomeReportTests(unittest.TestCase):
         lq = r["by_tag"]["local_qc"]
         self.assertEqual((lq["pass"]["rej_quality"], lq["pass"]["accepted"], lq["fail"]["rej_quality"]), (1, 1, 1))
         self.assertIn("(not in record)", lq)
+        q.write_text('{"pass": ["tea-flatlay-01"], "fail": ["people-cafe"]}')  # scenario ids, as older records have
+        lq = outcomes.build(store(), qc_decisions=str(q))["by_tag"]["local_qc"]
+        self.assertEqual((lq["pass"]["files"], lq["fail"]["rej_quality"]), (1, 2))
 
     def test_bad_csv_shapes_are_refused(self):
         with self.assertRaises(ValueError):

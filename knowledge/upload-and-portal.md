@@ -48,6 +48,11 @@ Stage only when the user asked for it in chat for this run and turned the switch
 A failed or partial stage or metadata run stops the queue (sticky): `metadata_error:*`, `metadata_incomplete`, `flags_not_set`, `stage_incomplete`, `stage_sha_mismatch`, `no_upload_input`, `no_stage_shape`,
 CAPTCHA, sign-in, restriction. Do not retry. Look at the New list by hand, then the user runs `resume`.
 Adobe's weekly submission limit or pending-review cap can pause the portal; do not invent the quota. Stage in waves.
+`metadata_error:count_mismatch` means the New list holds more files than the plan, for example a file left there by an
+earlier wave that hit the submission limit [REPO 2026-10-16]. Fix: a metadata-only plan that lists every file in New (reuse
+the earlier file's CSV row unchanged), then resume. Plan files must be real files inside the plan folder; a symlink that points
+outside it is refused. If the user set `stop.allow_agent_resume` true (in their own `config/local.json`), the agent may resume after reading the stop reason;
+the MCP server reads that value at start, so a change needs a restart.
 
 ## Limits, routes and lags (facts and lessons)
 
@@ -56,6 +61,7 @@ Adobe's weekly submission limit or pending-review cap can pause the portal; do n
 - Two caps, no published numbers: weekly submissions and files pending review [ADOBE announcement 2025-05-20]. Rough read: a high
   In Review count points to the pending cap; a low one right after submitting points to the weekly cap (opinion). Deleting and
   re-uploading does not reset a cap (community). Never state a reset day; log your own submissions and pacing.
+  One account (2026-10-16): "Submission limit reached" after 9 of 10 staged files went in; the 10th stayed in New with its metadata.
 - Review can take up to about 6 weeks when queues are heavy (Adobe help page); one account saw at most about 15 days in 2026.
 - Do not drive the portal with Playwright, a CDP attach to the user's Chrome or an automated sign-in: Google refused the sign-in
   and the attach failed (2026-09) [REPO]. Use the user's own browser and this kit's extension. Stop if the portal URL changes

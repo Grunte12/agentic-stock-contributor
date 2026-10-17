@@ -266,7 +266,9 @@ async function runJob(job) {
   const tabId = await workTab(job.url);
   await loaded(tabId, 45000);
   const final = (await chrome.tabs.get(tabId)).url || "";
-  const payload = !ALLOWED.test(final) ? { page_state: "restricted", note: "redirected outside allowlist" }
+  // The portal sometimes redirects /en/uploads to /en/uploads?isa0=1 (seen 2026-10-16); accept only that exact query.
+  const finalChecked = final.replace(/\?isa0=\d+$/, "");
+  const payload = !ALLOWED.test(finalChecked) ? { page_state: "restricted", note: "redirected outside allowlist" }
     : job.kind === "upload_stage" ? await stageFiles(tabId, job)
     : job.kind === "upload_metadata" ? await metaFlow(tabId, job)
     : job.kind === "portfolio" ? await readPortfolio(tabId) : await extract(tabId, job.kind);

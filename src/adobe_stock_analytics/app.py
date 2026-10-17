@@ -5,7 +5,7 @@ from pathlib import Path
 
 from . import calibration, dashboard, metrics as M, portfolio, recency, related, report as R, trends, upload_metadata, upload_stage, urls, verify
 from .bridge import Bridge, load_token
-from .config import DEFAULT_DATA, ROOT, load_config
+from .config import DEFAULT_DATA, ROOT, load_config, load_live_config
 from .queue import Queue
 from .store import Store, utcnow
 
@@ -14,7 +14,7 @@ MAX_SCANS = 20
 
 class App:
     def __init__(self, data_dir=None, cfg=None, start_bridge=False, clock=time.time):
-        self.cfg = cfg or {**load_config(), "_live_config": True}
+        self.cfg = cfg or {**load_live_config(), "_live_config": True}
         self.data_dir = Path(data_dir or DEFAULT_DATA)
         self.store = Store(self.data_dir)
         self.queue = Queue(self.store, self.cfg, clock=clock)

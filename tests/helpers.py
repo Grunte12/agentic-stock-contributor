@@ -7,7 +7,11 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from adobe_stock_analytics import parsers, store as S, urls  # noqa: E402
+from adobe_stock_analytics import config as _config  # noqa: E402
 from adobe_stock_analytics.config import load_config  # noqa: E402
+
+# Tests check the shipped defaults; the user's own config/local.json must not leak in.
+_config.LOCAL_CONFIG = ROOT / "tests" / "no-local-config.json"
 
 FIX = ROOT / "tests" / "fixtures" / "intel"
 CFG = load_config()

@@ -21,7 +21,7 @@ SOF = {0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7, 0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0
 # Phrases a prompt must not contain (policy: no artists, brands, trademarks, text on the image).
 BAD_PROMPT = [(r"\bin the style of\b", False), (r"\bby (?:the )?artist\b", False), (r"\btrademark(?:ed)?\b", True), (r"\bwatermark(?:ed)?\b", True)]
 TITLE_AI_WORDS = re.compile(r"\b(ai[- ]generated|ai image|ai art|generative ai|midjourney|firefly|dall-?e|gpt|stable diffusion)\b", re.I)
-NEGATION_OK = re.compile(r"\b(no|without|never|avoid|free of|blank)\b[^.,;]{0,40}$", re.I)
+NEGATION_OK = re.compile(r"\b(no|without|never|avoid|free of|blank)\b[^.;]{0,100}$", re.I)  # a comma list after "No" stays negated
 
 
 def jpeg_size(path):
@@ -119,7 +119,7 @@ def lint_registry(path, max_title=200, min_keywords=5, max_keywords=49):
             problems.append(f"{sid}: prompt missing or too short")
         for pat, negatable in BAD_PROMPT:
             for m in re.finditer(pat, prompt, re.I):
-                if not (negatable and NEGATION_OK.search(prompt[:m.start()][-60:])):
+                if not (negatable and NEGATION_OK.search(prompt[:m.start()][-120:])):
                     problems.append(f"{sid}: prompt contains '{m.group(0)}'")
     return {"ok": not problems, "count": len(sc), "problems": problems, "warnings": warnings,
             "note": "warnings are soft SEO conventions (knowledge topic metadata-seo); breaking one is allowed with a reason"}

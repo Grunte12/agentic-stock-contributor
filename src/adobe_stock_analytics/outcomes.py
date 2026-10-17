@@ -6,6 +6,7 @@ import csv
 import io
 import json
 import math
+import re
 from pathlib import Path
 
 OUTCOME = {"quality": "rej_quality", "similar": "rej_similar", "other": "rej_other", "unknown": "rej_unknown"}
@@ -116,7 +117,7 @@ def build(store, groups_csv=None, tags_csv=None, submitted_folder=None, min_n=5,
         verdict = {**{n: "pass" for n in q["pass"]}, **{n: "fail" for n in q["fail"]}}
         tag_cols.append("local_qc")
         for r in allrows:
-            r["tags"]["local_qc"] = verdict.get(r["name"], "(not in record)")
+            r["tags"]["local_qc"] = verdict.get(r["name"]) or _qc_by_id(verdict, r["name"]) or "(not in record)"
 
     groups = {}
     for r in allrows:
@@ -135,6 +136,13 @@ def build(store, groups_csv=None, tags_csv=None, submitted_folder=None, min_n=5,
                  "content, date and size at once, and looking at many tag cuts finds chance patterns: treat each pattern as a hypothesis to test "
                  "(see knowledge topic outcomes). by_tag.local_qc, when given, compares the local QC verdict with Adobe's: rej_quality under pass are refusals the QC missed."),
     }
+
+
+def _qc_by_id(verdict, name):
+    """Older records list scenario ids, not file names: match an id that appears whole in the file name (longest wins)."""
+    stem = Path(name).stem.lower() if name else ""
+    hits = [k for k in verdict if "." not in k and re.search(r"(?<![a-z0-9])" + re.escape(k.lower()) + r"(?![a-z0-9])", stem)]
+    return verdict[max(hits, key=len)] if hits else None
 
 
 def write_ledger(report, path):

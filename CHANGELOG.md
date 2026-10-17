@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Personal settings: `config/local.json` (gitignored) is laid over `config/stock_analytics.json` one section deep for the running server and the CLI, so a user can keep, for example, the upload switches on or `stop.allow_agent_resume` true without changing the shipped defaults. Tests ignore it.
+
 ## Toolkit 0.12.1
 
 - The MCP server reports the package version (it said 0.1.0); a test keeps `pyproject.toml` and the package version equal. Install checked end to end from a fresh clone on macOS (all five connect targets, skills, token, MCP tools); the Chrome extension step was not automated.
@@ -25,6 +29,7 @@
 
 Bump `extension/manifest.json` version on every change under `extension/`. `stock_status` shows the version the running extension reports (`extension_version`).
 
+- 0.10.1: the after-load URL check also accepts `?isa0=<digits>` and no other query, because the portal sometimes redirects `/en/uploads` to `/en/uploads?isa0=1` (seen 2026-10-16; staging stopped as `restricted`). No new permissions.
 - 0.10.0: portfolio read now covers every page. New `pager.js` with one guarded click on a plain page-number control inside `[data-t="core-pagination"]` (Next/Previous, anything outside that block and anything named submit, delete, remove, trash, publish, release, save or upload is refused). Cards of all pages are merged by asset id; names stay page 1 only (later pages have no embedded list). The payload records `page_numbers`, `pages_read` and `pager_error`. No new permissions.
 - 0.9.1: `upload_metadata` can also tick the sidebar box "People and Property are fictional" (flag `people_property_fictional`) and reads its state back with the other flags. Same guarded click, no new permissions.
 - 0.9.0: new `upload_metadata` kind and `meta.js`. For a user-enabled, ready plan it fetches the plan's one CSV from the bridge (sha256 re-checked), opens the portal's own Upload CSV dialog, hands it the CSV, selects all files in the New list, sets the common flags (generative AI, people/property answer, include in submission), clicks Save work, reloads and reads the counts back. This is the first version with clicks: exactly one `.click()`, inside `intelMetaClick`, which refuses anything not on a four-control allow list and anything named or labelled submit, delete, remove, trash, publish or release. Submit is never clicked. No new permissions.
