@@ -1,7 +1,11 @@
 # Changelog
 
-## Unreleased
+## Toolkit 0.13.0
 
+- One repository to clone and work in: the user's work goes in `workspace/` (git-ignored except its README guides): `research/`, `runs/<RUN>/` (brief, registry, raw, final, qc, `waves/W1..`, REPORT), `outcomes/`, `adapters/`, `archive/` and `STATUS.md`. Each folder has a README that tells the agent what goes there and which commands to run. Skill and knowledge paths now use `workspace/runs/<RUN>/` and `python3 stock.py` from the repository root; a wave is `waves/W<n>/` with its own CSV and plan.
+- Generation: knowledge `generation` gains "Build an adapter": the agent asks which generator the user has (API, CLI, MCP tool, web app) and builds a script, tool-call note or hand-off sheet in `workspace/adapters/<name>/` against one contract (`raw/<scenario-id>.<ext>` plus `generation_log.tsv`).
+- `workspace/archive` is a protected marker: plans and staging refuse it. Protected markers now match with either path separator.
+- INSTALL asks the person where to put the folder (suggests `~/agentic-stock-contributor`). `CLAUDE.md` imports `AGENTS.md`, which now routes by job and lists where every stage's files go.
 - Personal settings: `config/local.json` (gitignored) is laid over `config/stock_analytics.json` one section deep for the running server and the CLI, so a user can keep, for example, the upload switches on or `stop.allow_agent_resume` true without changing the shipped defaults. Tests ignore it.
 
 ## Toolkit 0.12.1

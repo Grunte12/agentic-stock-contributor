@@ -6,6 +6,16 @@ node_modules/
 .DS_Store
 extension/token.js
 runs/
+# Your work: everything under workspace/ stays local except the README.md guides
+/workspace/*
+!/workspace/README.md
+!/workspace/research/
+!/workspace/runs/
+!/workspace/outcomes/
+!/workspace/adapters/
+!/workspace/archive/
+/workspace/*/*
+!/workspace/*/README.md
 private/
 .mcp.json
 *.plan.json

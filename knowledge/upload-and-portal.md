@@ -9,7 +9,7 @@ Stage only when the user asked for it in chat for this run and turned the switch
 ## Flow
 
 1. **Package** a set of final images with its CSV and QC record (`build-csv`, `check-qc`; see `production-workflow` stage 9).
-2. **Plan**: `python3 <kit>/stock.py prepare-plan <package> --csv <csv> --qc <qc_decisions.json> --out <plan.json>` checks the
+2. **Plan**: `python3 stock.py prepare-plan <package> --csv <csv> --qc <qc_decisions.json> --out <plan.json>` checks the
    package and writes the plan JSON (`ready_for_upload`, `failures`, `package_digest`, `folder`, `files[path, sha256]`,
    `created_at`). Staging refuses a plan older than `max_plan_age_hours` (48), more than `max_files` (20) or `max_total_mb` (200)
    (config `upload_stage`), so run `prepare-plan` again right before staging and stage in waves of at most 20.

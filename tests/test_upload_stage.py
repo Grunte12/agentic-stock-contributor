@@ -64,6 +64,13 @@ class LoadPlanTests(unittest.TestCase):
             with self.assertRaises(U.StageError, msg=marker_folder):
                 U.load_plan(pp, ON, now=NOW)
 
+    def test_protected_marker_matches_either_separator(self):
+        markers = CFG["upload_stage"]["protected_markers"]
+        self.assertIn("workspace/archive", markers)
+        self.assertTrue(U.is_protected("/home/u/kit/workspace/archive/RUN/waves/W1", markers))
+        self.assertTrue(U.is_protected(r"C:\Users\u\kit\Workspace\Archive\RUN", markers))
+        self.assertFalse(U.is_protected("/home/u/kit/workspace/runs/RUN/waves/W1", markers))
+
     def test_changed_file_refused(self):
         pp, _, d = make_package(self.tmp)
         (d / "a.jpg").write_bytes(b"changed")

@@ -21,6 +21,12 @@ class StageError(ValueError):
     pass
 
 
+def is_protected(path, markers):
+    """True when any marker is a case-insensitive substring of the path; separators are compared as '/' on every OS."""
+    p = str(path).replace("\\", "/").lower()
+    return any(m.replace("\\", "/").lower() in p for m in markers)
+
+
 def sha256_file(path):
     h = hashlib.sha256()
     with open(path, "rb") as f:
@@ -67,7 +73,7 @@ def load_plan(plan_path, cfg, only=None, now=None, switch="upload_stage"):
     folder = Path(str(plan.get("folder", ""))).resolve()
     if not folder.is_dir():
         raise StageError("plan folder not found")
-    if any(m.lower() in str(folder).lower() for m in c["protected_markers"]):
+    if is_protected(folder, c["protected_markers"]):
         raise StageError("plan folder is protected and can never be staged")
     entries = plan.get("files")
     if not isinstance(entries, list) or not entries:

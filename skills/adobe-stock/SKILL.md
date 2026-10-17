@@ -89,8 +89,8 @@ New install? Run `doctor` and follow its `next` list; `docs/SETUP.md` has the fu
 
 ## CLI (same tools, no AI needed)
 
-`<kit>` is the folder where the toolkit was installed (`~/agentic-stock-contributor` by default). `stock.py` works from any current folder and needs no environment variable.
+Run from the repository root; your work goes in `workspace/` (read `workspace/README.md` and `workspace/STATUS.md` first). `stock.py` needs no environment variable.
 
-`python3 <kit>/stock.py <cmd>`: `doctor`, `print-mcp-config`, `status`, `report`, `lint-registry`, `check-images`, `qc-tiles`, `similar`,
+`python3 stock.py <cmd>`: `doctor`, `print-mcp-config`, `status`, `report`, `lint-registry`, `check-images`, `qc-tiles`, `similar`,
 `check-qc`, `check-decisions`, `build-csv`, `prepare-plan`, `upload-stage <plan> [--only FILE]`, `upload-metadata <plan>`, `reset-staged`, `resume`, `dashboard`,
 `write-extension-token`, `install-skill --agent claude|codex|opencode|agents`. The MCP server (`serve`) also runs the extension bridge.

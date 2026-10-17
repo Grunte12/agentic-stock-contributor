@@ -11,7 +11,7 @@ while installing. Never put tokens or passwords into any config.
 
 | Part | Where | Why |
 |---|---|---|
-| This folder (the code) | `~/agentic-stock-contributor` (Windows: `%USERPROFILE%\agentic-stock-contributor`) | One fixed place. Do not move it after step 4: the agent config stores its path. |
+| This folder (code + the person's `workspace/`) | a folder the person chooses (suggest `~/agentic-stock-contributor`; Windows `%USERPROFILE%\agentic-stock-contributor`) | The person works inside it afterwards. Do not move it after step 4: the agent config stores its path. |
 | MCP server entry | one line block in your host's user config | Gives you the `stock_*` tools. |
 | Skill + know-how | your host's skills folder | Gives you the workflow and rules. |
 | Chrome extension | loaded by the person in Chrome | Reads Adobe Stock pages for the server. It never clicks Submit. |
@@ -41,10 +41,14 @@ Never pick for them because it seems obvious. Record nothing they did not say.
 
 ## Step 1. Get the code (pinned)
 
+Ask the person where to put it: "Where should I put the Adobe Stock folder? You will work inside it, and your images and records
+stay on this computer (they are never uploaded to GitHub)." Recommend `~/agentic-stock-contributor`; if they keep their projects
+in another folder, use that. Below, `<install folder>` is their answer.
+
 ```bash
-git clone --branch v0.12.1 --depth 1 https://github.com/Grunte12/agentic-stock-contributor ~/agentic-stock-contributor
-cd ~/agentic-stock-contributor
-git rev-parse HEAD   # must equal the commit hash in the GitHub release notes for v0.12.1 (Releases page)
+git clone --branch v0.13.0 --depth 1 https://github.com/Grunte12/agentic-stock-contributor <install folder>
+cd <install folder>
+git rev-parse HEAD   # must equal the commit hash in the GitHub release notes for v0.13.0 (Releases page)
 ```
 
 If `git` is missing, ask the person to install it (git-scm.com) or download the release zip and unpack it to the same folder.
@@ -133,7 +137,9 @@ step 8.
 2. Call `stock_knowledge` with topic `index`.
 3. Offer the first task: "Tell me what you want to do: find a niche, plan a set, check images, or check results."
 
-Then follow `skills/adobe-stock/SKILL.md`.
+Then follow `skills/adobe-stock/SKILL.md`. From now on the person opens their agent in `<install folder>` to work: their
+batches, research and results go in `workspace/` (see `workspace/README.md`), and `git pull` updates the toolkit without touching
+them.
 
 ## Troubleshooting
 

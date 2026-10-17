@@ -40,7 +40,7 @@ Patterns usually sit in **what the picture shows**, not in pixel statistics (see
 stock_outcome_report(groups_csv=..., tags_csv=..., submitted_folder=<the batch folder>, ledger_out=<run>/outcome_ledger.csv)
 ```
 
-CLI: `python3 <kit>/stock.py outcome-report --groups g.csv --tags t.csv --submitted <folder> --ledger <run>/outcome_ledger.csv`.
+CLI: `python3 stock.py outcome-report --groups g.csv --tags t.csv --submitted <folder> --ledger <run>/outcome_ledger.csv`.
 Add `qc_decisions=<run>/qc_decisions.json` (CLI `--qc`) to measure your local QC against Adobe: tag `local_qc`
 shows Adobe's verdicts for files your QC passed and failed; `rej_quality` under `pass` are refusals the QC missed. Do this for
 every batch: it is the only honest test of the QC prompt (one account's cheap-reviewer pass caught 0 of 9 quality refusals).

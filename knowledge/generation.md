@@ -12,8 +12,8 @@ verify**, not to choose.
 The method follows the "grilling" skill by Matt Pocock (MIT, `skills/productivity/grilling` in github.com/mattpocock/skills; `grill-me` is its short trigger): treat the choices as a tree, ask in rounds,
 recommend an answer, look up facts yourself, leave decisions to the user, and finish only when nothing is left open.
 
-1. Copy `examples/generation_decisions.example.json` to `runs/<RUN>/generation_decisions.json`.
-2. Run `python3 <kit>/stock.py check-decisions runs/<RUN>/generation_decisions.json`. Its `open` list is every question
+1. Copy `examples/generation_decisions.example.json` to `workspace/runs/<RUN>/generation_decisions.json`.
+2. Run `python3 stock.py check-decisions workspace/runs/<RUN>/generation_decisions.json`. Its `open` list is every question
    still unanswered.
 3. **Ask in rounds, by dependency.** A round holds only questions you can ask now: ones whose earlier answers are already known.
    Typical order: round 1 `provider`; round 2 `model`, `account`, `terms`, `spend`; round 3 `scenario_count`, `variants`, `size`,
@@ -36,18 +36,41 @@ Never choose a provider, model, account, spend limit or count on your own, and n
 ### Optional: run it under a host goal command
 
 Claude Code and Codex CLI have a `/goal` command that keeps the agent working until a checkable condition holds. A condition that
-fits this stage: `check-decisions runs/<RUN>/generation_decisions.json prints "ok": true and the canary images were shown to the user`.
+fits this stage: `check-decisions workspace/runs/<RUN>/generation_decisions.json prints "ok": true and the canary images were shown to the user`.
 The goal loop must still stop and ask whenever an item is open; a goal never lets the agent answer for the user.
+
+## Build an adapter (first run with a generator)
+
+An adapter connects the user's generator to the kit. It lives in `workspace/adapters/<name>/` (never pushed). Look there first:
+if an adapter for the chosen provider exists, read its `ADAPTER.md` and reuse it; only reopen the decisions that changed.
+
+If none exists, build it with the user, one question at a time (host question popup, recommended answer first):
+
+1. **Which generator?** Ask; do not assume. Examples: an image API (OpenAI, Gemini), Grok, Google Flow, a local model, an MCP
+   tool the agent already has (for example a ChatGPT bridge). Then find the facts yourself (is the CLI installed, is the MCP
+   tool listed, what the provider documents about limits and commercial use) and show them next to the next question.
+2. **Which kind of adapter fits?** Script (API or CLI), tool call (MCP tool in the agent), or hand-off sheet (web app the user
+   drives). Recommend the one that needs the least new software. Installing anything or creating an API key is the user's yes.
+3. **Write `ADAPTER.md`**: provider, model, account name (never a key or password), the kind, the exact way to run one
+   scenario, the canary size, the limits seen, and the dated answers. A script reads the key from the user's environment only.
+4. **Prove it on the canary**: one or two scenarios into `workspace/runs/<RUN>/raw/`, a line each in `generation_log.tsv`,
+   images shown to the user. Fix the adapter until the contract below holds, then continue on the user's go.
+
+A hand-off sheet lists each scenario id with its prompt and the file name to save; the agent then checks that every expected
+file exists, belongs to its scenario, and logs missing ones as failed. Never copy credentials, cookies or session files into
+an adapter.
 
 ## Contract any provider must meet
 
 - Input: the prompt of each scenario in `registry.json`. One output per prompt is the suggested default (Adobe wants distinct concepts); the user's `variants` answer decides.
-- Output: raw images in the folder the user chose (suggested `runs/<RUN>/raw`), one per scenario, named `<scenario-id>.<ext>` (extension of the provider).
+- Output: raw images in the folder the user chose (suggested `workspace/runs/<RUN>/raw`), one per scenario, named `<scenario-id>.<ext>` (extension of the provider).
 - Record per scenario: ok or failed, the provider's own error text (secrets removed), and the time. A table in the run report is enough.
 - If your provider has a queue, receipts or a job runner, use it; if not, a plain loop is fine. The tool does not care.
 
 ## Rules
 
+- **Readiness check first.** If the provider or adapter has a no-spend check (status, doctor, a paired tab), run it before any
+  live call and stop on any blocker.
 - **Canary first.** Generate only the canary size the user chose, open the images, and report. Continue only after the user says go.
   If the canary fails, stop and show the real error; do not run the rest. If the canary images fail QC the same way, change the
   prompts (a new run name and folder) before generating more. Replacements for terminal failures go in a new small run, so the

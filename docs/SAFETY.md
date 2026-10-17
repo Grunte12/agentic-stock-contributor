@@ -12,7 +12,7 @@
 - **Generation is yours to license.** If you use a ChatGPT/Gemini/etc. web session or another account for image generation, check that
   service's terms. This project does not include or recommend any session-capture tool.
 - **Privacy.** Data stays on your machine in `data/` (git-ignored): raw page observations, your portfolio, the pairing token. The
-  dashboard link and the pairing token are private. Do not commit `data/`, `extension/token.js`, `runs/` or your own `.mcp.json`.
+  dashboard link and the pairing token are private. Do not commit `data/`, `extension/token.js`, `workspace/` (your work; git ignores it except its README guides), `config/local.json` or your own `.mcp.json`.
 - **Community tips** in `knowledge/` are dated anecdotes with a strength tag, not Adobe rules.
 
 ## Known limits of the extension

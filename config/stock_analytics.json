@@ -152,7 +152,8 @@
     "protected_markers": [
       "DO_NOT_UPLOAD",
       "quarantine",
-      "holdout"
+      "holdout",
+      "workspace/archive"
     ],
     "note": "Staging puts verified files into the portal's New list; it never submits. The user turns it on (enabled) for a run and off after. Protected folders can never be staged."
   },

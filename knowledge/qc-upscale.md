@@ -112,7 +112,7 @@ Rules for every setup:
 
 ### The package gate reads this record
 
-`python3 <kit>/stock.py check-qc <qc_decisions.json> <final_dir>` (and `prepare-plan`, which runs it) passes visual QC only when:
+`python3 stock.py check-qc <qc_decisions.json> <final_dir>` (and `prepare-plan`, which runs it) passes visual QC only when:
 
 1. every package image is in `pass` (by file name) and none is in `fail`;
 2. `reviewer` is set and `mode` is one of `parallel`, `sequential`, `single-pass`, `user`;
@@ -189,7 +189,7 @@ recommended option first. Installing anything needs the user's yes; download onl
 
 | option | for whom | evidence |
 |---|---|---|
-| **Real-ESRGAN `realesrgan-ncnn-vulkan`, model `realesrgan-x4plus`, plus the post-upscale veto (recommended)** | anyone; the agent runs it: `python3 <kit>/stock.py upscale <raw_dir> --out <final_dir> --bin <path>` (dry run first, then `--confirm-write`; the resize needs Pillow) | used for every batch of this project 2026-08 to 10. In the best batch, finals that survived a strict artifact veto were accepted 22 of 26; the batch refused 13 of 13 used the same upscaler without the veto [REPO, one account]. About 27-30 s per 1254-1448 px raw on an Apple M5 (GPU-bound; a whole folder per call is not faster), so 100 images take about 45-50 minutes unattended. Free, local, macOS/Windows/Linux, no Python. Releases: github.com/xinntao/Real-ESRGAN |
+| **Real-ESRGAN `realesrgan-ncnn-vulkan`, model `realesrgan-x4plus`, plus the post-upscale veto (recommended)** | anyone; the agent runs it: `python3 stock.py upscale <raw_dir> --out <final_dir> --bin <path>` (dry run first, then `--confirm-write`; the resize needs Pillow) | used for every batch of this project 2026-08 to 10. In the best batch, finals that survived a strict artifact veto were accepted 22 of 26; the batch refused 13 of 13 used the same upscaler without the veto [REPO, one account]. About 27-30 s per 1254-1448 px raw on an Apple M5 (GPU-bound; a whole folder per call is not faster), so 100 images take about 45-50 minutes unattended. Free, local, macOS/Windows/Linux, no Python. Releases: github.com/xinntao/Real-ESRGAN |
 | Upscayl (free desktop app built on the same Real-ESRGAN-family models; similar output and speed, no terminal) | a user who prefers clicking; the user runs it, then `check-images` | one Adobe Community post (2025-12-23) reported approval falling with Upscayl; no confirmed cause [SINGLE] |
 | Topaz Gigapixel, Photoshop Super Resolution (paid) | users who already own them | community advice; not tested here [SINGLE] |
 
@@ -225,11 +225,11 @@ wants 24 MP, propose a canary of a few files at full x4 size beside 3840 px file
 ## After upscale
 
 ```bash
-python3 <kit>/stock.py check-images <final_dir>
+python3 stock.py check-images <final_dir>
 ```
 
 Record mean difference final vs raw if you compute it. The native-tile review
-is the zoom check. Screen look-alikes: `python3 <kit>/stock.py similar <final_dir> --against <earlier submitted folder> [--against ...]`
+is the zoom check. Screen look-alikes: `python3 stock.py similar <final_dir> --against <earlier submitted folder> [--against ...]`
 (needs Pillow; average hash, Hamming distance 8 or less). Include folders whose upload state is unknown: treat them as possibly
 submitted. It is a proxy [REPO]: Adobe refused a file as similar whose nearest local pair a screen had rated clear (2026-08),
 and Adobe compares against its whole collection, not only yours. For each pair keep the stronger image or split the two across waves after a look;

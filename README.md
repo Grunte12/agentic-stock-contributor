@@ -16,6 +16,10 @@ package your images, stage a verified upload for your final click, and read the 
 | **MCP server** (`stock_*` tools) | Deterministic, traceable numbers: supply, season, own portfolio, Adobe's accept/reject outcomes, verified staging |
 | **Chrome extension** | Reads Adobe Stock pages and your contributor dashboard for the server; never clicks Submit |
 
+**You work inside this folder.** Clone it once; your research, batches, packages and results go in `workspace/` (never pushed,
+see [workspace/README.md](workspace/README.md)), and every folder there has a guide the agent follows. `git pull` updates the
+toolkit without touching your work.
+
 Plus local commands (stdlib only) for the steps between "images exist" and "ready to stage": `lint-registry`, `check-images`, `qc-tiles`,
 `check-qc`, `build-csv`, `prepare-plan`. You bring your own image generator and upscaler.
 

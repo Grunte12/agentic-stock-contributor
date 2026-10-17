@@ -41,7 +41,7 @@ changed.
    the tool README). Stored data from earlier scans can still be reported with
    `stock_report`, with their dates.
 3. If `stop` is not null: report the reason; do not queue work. The user runs
-   `PYTHONPATH=src python3 <kit>/stock.py resume` in the tool repo
+   `PYTHONPATH=src python3 stock.py resume` in the tool repo
    (`stock_resume` refuses unless the user's config allows it).
 4. First time with the tool: `stock_knowledge(topic="index")`, read `mindset`,
    then only the topic you need.

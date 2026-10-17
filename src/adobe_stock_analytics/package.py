@@ -12,7 +12,7 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 
 from .upload_metadata import _check_rows
-from .upload_stage import StageError, sha256_file
+from .upload_stage import StageError, is_protected, sha256_file
 
 # Adobe contributor help pages (read 2026-10-13): JPEG, 4-100 megapixels, file <= 45 MB.
 MIN_MP, MAX_MP, MAX_MB = 4.0, 100.0, 45
@@ -216,7 +216,7 @@ def prepare_plan(folder, csv_path, qc_path, out_path, protected_markers=(), max_
     `ready_for_upload: true` means local gates passed; it is not Adobe acceptance."""
     d = Path(folder).resolve()
     failures = []
-    if any(m.lower() in str(d).lower() for m in protected_markers):
+    if is_protected(d, protected_markers):
         failures.append("folder is protected and can never be uploaded")
     img = check_images(d)
     failures += img["problems"]
@@ -275,7 +275,7 @@ GENERATION_QUESTIONS = {
     "scenario_count": "How many scenarios (images) in this run?",
     "variants": "How many outputs per prompt? (suggested: 1; Adobe wants distinct concepts, not many outputs of one prompt)",
     "size": "Which aspect ratio and size?",
-    "output_folder": "Which folder receives the raw output? (suggested: runs/<RUN>/raw)",
+    "output_folder": "Which folder receives the raw output? (suggested: workspace/runs/<RUN>/raw)",
     "spend": "May this run spend money or quota? Up to how much?",
     "terms": "Do the provider's terms allow commercial stock use? (user has checked)",
     "canary": "How many images in the first canary before the rest?",
