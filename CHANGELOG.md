@@ -1,5 +1,11 @@
 # Changelog
 
+## Toolkit 0.14.0
+
+- Shared state for every agent (any host): `workspace/STATE.md` (now: focus, runs, decisions waiting on the user as `D-NNN`, stops, next, which agent is working), `LOG.md` (append-only history) and `PLAYBOOK.md` (lessons `L-NNN` with evidence paths and helpful/harmful counts, and the user's standing choices `C-NNN`). Templates in `examples/workspace/`. Design follows Anthropic's long-running harness (progress file plus structured state), OpenAI harness engineering (short AGENTS.md as a map), ACE and ExpeL (itemized, delta-updated lessons with counters, never full rewrites) and evidence that self-diagnosed lessons and planted memory are unreliable.
+- New commands: `init` (creates the three files, never overwrites), `lesson add|vote|retire` (the only way to change the playbook; a lesson needs an evidence file that exists), `lint-workspace` (sections, size caps, stale claim, decision ids, log order, evidence paths, AGENTS.md length).
+- `AGENTS.md` rewritten as a short map with the session loop (start, work, end) and the learning rules; a test keeps it under 100 lines. `workspace/STATUS.md` is replaced by `STATE.md`.
+
 ## Toolkit 0.13.0
 
 - One repository to clone and work in: the user's work goes in `workspace/` (git-ignored except its README guides): `research/`, `runs/<RUN>/` (brief, registry, raw, final, qc, `waves/W1..`, REPORT), `outcomes/`, `adapters/`, `archive/` and `STATUS.md`. Each folder has a README that tells the agent what goes there and which commands to run. Skill and knowledge paths now use `workspace/runs/<RUN>/` and `python3 stock.py` from the repository root; a wave is `waves/W<n>/` with its own CSV and plan.

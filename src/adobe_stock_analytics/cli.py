@@ -110,6 +110,23 @@ def main(argv=None):
     ir = sub.add_parser("import-related")
     ir.add_argument("path")
     ir.add_argument("--seed", required=True)
+    sub.add_parser("init", help="create workspace/STATE.md, LOG.md and PLAYBOOK.md from the templates when missing (never overwrites)")
+    sub.add_parser("lint-workspace", help="check the shared state files: structure, size caps, stale claim, decision ids, log order, lesson evidence")
+    ls = sub.add_parser("lesson", help="change workspace/PLAYBOOK.md one entry at a time: add, vote, retire")
+    lsub = ls.add_subparsers(dest="lesson_cmd", required=True)
+    la = lsub.add_parser("add", help="add a lesson (needs --evidence) or a standing user choice (--kind choice --source)")
+    la.add_argument("text")
+    la.add_argument("--kind", choices=["lesson", "choice"], default="lesson")
+    la.add_argument("--evidence", action="append", default=[], help="a file a reader can open (repeatable)")
+    la.add_argument("--source", default=None, help="for a choice: where the user decided, for example 'chat 2026-10-17'")
+    la.add_argument("--tags", default="", help="comma-separated, for example qc,upscale")
+    lv = lsub.add_parser("vote", help="count one use of a lesson as helpful or harmful")
+    lv.add_argument("id")
+    lv.add_argument("verdict", choices=["helpful", "harmful"])
+    lv.add_argument("--evidence", required=True)
+    lt = lsub.add_parser("retire", help="move an entry to Retired with the reason")
+    lt.add_argument("id")
+    lt.add_argument("--reason", required=True)
     t = sub.add_parser("import-trends")
     t.add_argument("path")
     a = ap.parse_args(argv)
@@ -240,6 +257,21 @@ def main(argv=None):
         out = app.stock_import_upload_dates(a.path)
     elif a.cmd == "import-related":
         out = app.stock_import_related(a.path, a.seed)
+    elif a.cmd in ("init", "lint-workspace", "lesson"):
+        from . import workspace as WS
+        try:
+            if a.cmd == "init":
+                out = WS.init()
+            elif a.cmd == "lint-workspace":
+                out = WS.lint()
+            elif a.lesson_cmd == "add":
+                out = WS.add(a.text, a.kind, a.evidence, a.source, [t for t in a.tags.split(",") if t.strip()])
+            elif a.lesson_cmd == "vote":
+                out = WS.vote(a.id, a.verdict, a.evidence)
+            else:
+                out = WS.retire(a.id, a.reason)
+        except (OSError, ValueError) as e:
+            out = {"ok": False, "error": str(e)}
     elif a.cmd == "verify-doc":
         out = app.stock_verify_doc(a.path)
     else:

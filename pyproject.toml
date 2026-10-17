@@ -1,6 +1,6 @@
 [project]
 name = "adobe-stock-analytics"
-version = "0.13.0"
+version = "0.14.0"
 description = "Chrome extension, MCP server, skill and playbook that help AI agents run an Adobe Stock contributor workflow"
 readme = "README.md"
 license = {text = "MIT"}

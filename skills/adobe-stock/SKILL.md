@@ -9,6 +9,8 @@ Agent-facing; English. Reply to the user in the user's language.
 
 ## Start here
 
+0. Working inside the toolkit repository: follow the session loop in `AGENTS.md` first (read `workspace/STATE.md`, claim,
+   matching `workspace/PLAYBOOK.md` entries; at the end log, update state, release). It is the shared memory of every agent.
 1. Call `stock_status`. If `bridge_connected` is false, say so; market numbers are then `unmeasured`. If `stop` is not null,
    report its reason and queue nothing; only the user resumes. Note `pages_today` against `daily_cap`.
 2. Read the know-how you need with `stock_knowledge` (topic `index` lists them; read only the one you need):
@@ -89,7 +91,7 @@ New install? Run `doctor` and follow its `next` list; `docs/SETUP.md` has the fu
 
 ## CLI (same tools, no AI needed)
 
-Run from the repository root; your work goes in `workspace/` (read `workspace/README.md` and `workspace/STATUS.md` first). `stock.py` needs no environment variable.
+Run from the repository root; your work goes in `workspace/` (read `workspace/STATE.md` first, then `workspace/README.md`). `stock.py` needs no environment variable.
 
 `python3 stock.py <cmd>`: `doctor`, `print-mcp-config`, `status`, `report`, `lint-registry`, `check-images`, `qc-tiles`, `similar`,
 `check-qc`, `check-decisions`, `build-csv`, `prepare-plan`, `upload-stage <plan> [--only FILE]`, `upload-metadata <plan>`, `reset-staged`, `resume`, `dashboard`,

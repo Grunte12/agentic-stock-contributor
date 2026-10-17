@@ -10,7 +10,7 @@ see `generation`). Stage 7 can use `stock.py upscale` (Real-ESRGAN, the recommen
 Details: `generation`, `niche-research`, `analytics-tools`, `qc-upscale`, `metadata-seo`, `upload-and-portal`, `outcomes`.
 
 You work inside the cloned repository. Run every command from its root folder (`python3 stock.py ...`); all your work goes
-in `workspace/` (git-ignored, never pushed; read `workspace/README.md` and `workspace/STATUS.md` first). One folder per batch
+in `workspace/` (git-ignored, never pushed; read `workspace/STATE.md` first, then `workspace/README.md`). One folder per batch
 (a "run"); the full layout and command list are in `workspace/runs/README.md`:
 
 ```text
@@ -93,7 +93,10 @@ live generation (canary first, then the rest); any external vision provider call
     mode and confirmer, look-alike pairs, lint warnings); commands in order; Adobe action status ("staged, not submitted" /
     "submitted by the user"); unresolved risks. Write a prediction for the pending files. When Adobe has decided: outcomes
     (`stock_outcomes_scan`), own downloads (`stock_portfolio`), then `stock_outcome_report` per sub-niche and content tag, and help the
-    user choose the next sub-niche (knowledge topic `outcomes`). Judge a sub-niche on its own results, not on the whole batch.
+    user choose the next sub-niche (knowledge topic `outcomes`).
+    Then learn: each finding with evidence becomes a playbook entry (`python3 stock.py lesson add ... --evidence <report or ledger>`),
+    and each lesson this run applied gets a vote (`lesson vote L-NNN helpful|harmful --evidence <path>`). Log the step and update
+    `workspace/STATE.md`. Judge a sub-niche on its own results, not on the whole batch.
 
 ## Hard rules
 
