@@ -69,5 +69,6 @@ run, and off after. Staging fills the portal's New list; **you** click Submit.
 
 ## Bring your own generator and upscaler
 
-The workflow needs images, but this tool does not make them. Use any generator you are licensed to use, and a local AI upscaler to about
-3840 px on the long edge. The workflow only needs the final JPEGs and a registry (see `examples/`). Read `docs/SAFETY.md` first.
+The workflow needs images, but this tool does not make them. Use any generator you are licensed to use. After Source Gate, test one
+canary and choose the least-transformative resize or upscaler that reaches 4 MP without visible regression. The workflow only needs
+the final JPEGs and a registry (see `examples/`). Read `docs/SAFETY.md` first.

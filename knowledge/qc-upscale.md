@@ -195,14 +195,15 @@ artifacts that the prompt tells the reviewer to ignore.
 Alternatives reported by the community: Upscayl
 (free, local), Photoshop 2026 built-in 2x/4x (Firefly or Topaz). [SINGLE]
 
-### Which upscaler (recommend; the user chooses)
+### Which transform (recommend; the user chooses)
 
 First check what is installed (`realesrgan-ncnn-vulkan` on PATH, the Upscayl app, Photoshop, Topaz). Then ask with the question tool,
 recommended option first. Installing anything needs the user's yes; download only from the official release page.
 
 | option | for whom | evidence |
 |---|---|---|
-| **Real-ESRGAN `realesrgan-ncnn-vulkan`, model `realesrgan-x4plus`, plus the post-upscale veto (recommended)** | anyone; the agent runs it: `python3 stock.py upscale <raw_dir> --out <final_dir> --bin <path>` (dry run first, then `--confirm-write`; the resize needs Pillow) | used for every batch of this project 2026-08 to 10. In the best batch, finals that survived a strict artifact veto were accepted 22 of 26; the batch refused 13 of 13 used the same upscaler without the veto [REPO, one account]. About 27-30 s per 1254-1448 px raw on an Apple M5 (GPU-bound; a whole folder per call is not faster), so 100 images take about 45-50 minutes unattended. Free, local, macOS/Windows/Linux, no Python. Releases: github.com/xinntao/Real-ESRGAN |
+| **Deterministic high-quality resize** | a technically clean raw that already has enough detail and crosses 4 MP at 2x-3x | least likely to invent detail; label it as a resize. Local technical evidence exists, but Adobe acceptance for that recovery set is still unmeasured [REPO, one account] |
+| **Real-ESRGAN `realesrgan-ncnn-vulkan`, model `realesrgan-x4plus`, plus the post-upscale veto** | a source that needs detail enhancement after a canary comparison | used for every batch of this project 2026-08 to 10. In the best batch, finals that survived a strict artifact veto were accepted 22 of 26; the batch refused 13 of 13 used the same upscaler without the veto [REPO, one account]. About 27-30 s per 1254-1448 px raw on an Apple M5. Free, local, macOS/Windows/Linux, no Python. Releases: github.com/xinntao/Real-ESRGAN |
 | Upscayl (free desktop app built on the same Real-ESRGAN-family models; similar output and speed, no terminal) | a user who prefers clicking; the user runs it, then `check-images` | one Adobe Community post (2025-12-23) reported approval falling with Upscayl; no confirmed cause [SINGLE] |
 | Topaz Gigapixel, Photoshop Super Resolution (paid) | users who already own them | community advice; not tested here [SINGLE] |
 
