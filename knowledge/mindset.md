@@ -78,6 +78,6 @@ holdout, quarantine or superseded folders, and never says "uploaded" or "accepte
 2. Measure supply for 2-3 exact phrases per sub-niche (`stock_scan`, `stock_wait`, `stock_report`). Add season (`lead_as_of`) and
    attention series if useful.
 3. Keep sub-niches with a buyer sentence plus a measured band, or an explicit `unmeasured` the user accepted.
-4. Write a 6-10 image series brief, then prompts, generate, upscale, QC, metadata, package (see `production-workflow`).
+4. Write a 6-10 image series brief, then prompts, generate, Source Gate, transform, Transform Gate, metadata and package (see `production-workflow`).
 5. Prepare the plan, stage it, the user submits (see `upload-and-portal`).
 6. After outcomes arrive, read them (`stock_outcomes_scan`, `stock_outcomes`) and update the next brief.

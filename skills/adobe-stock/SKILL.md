@@ -61,15 +61,16 @@ one step at a time, and ask choices with your host's question tool. Do the work 
 | Own downloads, groups, calibration | `stock_portfolio`, `stock_import_groups`, `stock_report portfolio/calibration` |
 | Not accepted list with Adobe's cause | `stock_outcomes_scan` then `stock_outcomes` |
 | Accept / reject rates per sub-niche and content pattern; what to make next | `stock_outcome_report`, knowledge topic `outcomes` |
-| Upscale raws (Real-ESRGAN x4plus) | `stock.py upscale` (CLI), knowledge topic `qc-upscale` |
+| Transform technical-pass raws (when chosen) | `stock.py upscale` (CLI) or the user's chosen resize/upscaler; knowledge topic `qc-upscale` |
 | Look-alike screen against earlier uploads | `stock.py similar` (CLI, Pillow), knowledge topic `qc-upscale` |
 | Stage a verified plan on the Uploads page | `stock_upload_stage`, `stock_upload_result` |
 | Apply CSV metadata and flags to the staged files | `stock_upload_metadata`, `stock_upload_result` |
 | Visual summary for the user | `stock_dashboard` |
 | Stop now | `stock_stop` |
 
-Token habits: batch scans; read the rendered report, not raw observations; never ask for page dumps; hand per-image looks to the
-cheapest capable worker your host has and read only its JSON rows; the lead confirms fails.
+Token habits: batch scans; read the rendered report, not raw observations; never ask for page dumps; hand visual QC to a capable
+fresh-context reviewer and keep only its JSON evidence in the lead context. Confirm a visual fail with an independent visual
+reviewer; never infer or overturn it from text alone.
 
 ## The end-to-end job
 

@@ -6,7 +6,7 @@ description: The 10-stage batch workflow (buyer, sub-niche, demand check, series
 Each stage has an exit gate. Stop and report if a gate fails. Stages 1-4 and 10 use the MCP tools (`stock_*`). Stages 5, 8
 and 9 use this tool's local commands (`python3 stock.py <command>`, stdlib only). Stage 6 needs
 **the user's own** image generator: the tool does not generate and does not care which one is used (a question loop with the user,
-see `generation`). Stage 7 can use `stock.py upscale` (Real-ESRGAN, the recommended route) or any upscaler the user chooses.
+see `generation`). Stage 7 starts with technical QC of the raw, then uses the least-transformative resize or upscaler that reaches the file gate.
 Details: `generation`, `niche-research`, `analytics-tools`, `qc-upscale`, `metadata-seo`, `upload-and-portal`, `outcomes`.
 
 You work inside the cloned repository. Run every command from its root folder (`python3 stock.py ...`); all your work goes
@@ -60,19 +60,21 @@ live generation (canary first, then the rest); any external vision provider call
    model or account silently. Generate the canary first, look at it, and continue only on the user's go. If a scenario fails for
    content reasons, write a new, different concept instead of rerolling the same prompt. Gate: decisions ok, and every scenario
    has an output or a recorded failure.
-7. **Upscale every OK raw** with a local AI upscaler to about 3840 px on the long edge, JPEG quality 95, sRGB (see `qc-upscale`,
-   "Which upscaler": recommend, the user chooses). Recommended: `python3 stock.py upscale <raw_dir> --out workspace/runs/<RUN>/final --bin <realesrgan-ncnn-vulkan>` (dry run, then `--confirm-write`).
-   QC runs once, on the finals, because those are the bytes that get uploaded. Name files `NN_<scenario-id>.jpg`.
+7. **Source Gate, then transform.** Inspect each raw at full frame plus native tiles. Block only concrete pixel defects or a hard
+   brief miss; record concept strength and buyer fit separately. Run one transform canary, compare it with the same raw crops, then
+   use the least-transformative route that reaches 4 MP without regression. Record whether it was a resize or an AI upscale; never
+   silently switch routes. Name files `NN_<scenario-id>.jpg`.
    Gate: `python3 stock.py check-images workspace/runs/<RUN>/final` returns `"ok": true`
    (JPEG, 4-100 MP, at most 45 MB, no exact duplicates).
-8. **QC the finals.** `python3 stock.py qc-tiles workspace/runs/<RUN>/final --out <tmp>` (needs Pillow) writes a 1600 px frame
-   and 3x3 native tiles per image. One reviewer job per image reads them with the prompt in `qc-upscale`; a second look (or you)
-   opens only the flagged tiles. Pick the setup by host capability (`qc-upscale`, "Pick your reviewer setup"); no vision for local
+8. **Transform Gate.** `python3 stock.py qc-tiles workspace/runs/<RUN>/final --out <tmp>` (needs Pillow) writes a 1600 px frame
+   and 3x3 native tiles per image. A visual reviewer compares final against raw and fails only concrete source defects or regressions
+   introduced or amplified by the transform. An independent visual reviewer confirms flagged tiles. Pick the setup by host capability
+   (`qc-upscale`, "Pick your reviewer setup"); no vision for local
    files = `BLOCKED`. Passes had one look and are not an Adobe forecast. Record reviewer, mode and each image's sha256 in
    `qc_decisions.json` (file names, not ids), then run
    `python3 stock.py check-qc workspace/runs/<RUN>/qc_decisions.json workspace/runs/<RUN>/final`.
    Never write a QC record no reviewer produced.
-9. **Metadata, CSV, plan, wave.** Write titles and keywords from the final pixels, not the prompt (update only `title`, `keywords` and `category` in `registry.json`), copy the
+9. **Ship Gate: metadata, similarity, CSV, plan, wave.** Write titles and keywords from the final pixels, not the prompt (update only `title`, `keywords` and `category` in `registry.json`), copy the
    passed finals of the first wave to `workspace/runs/<RUN>/waves/W1/`, then (`W=workspace/runs/<RUN>/waves/W1`):
    ```bash
    python3 stock.py lint-registry workspace/runs/<RUN>/registry.json

@@ -1,13 +1,15 @@
 ---
-description: How to QC final images (a cheap-tier vision reviewer per image over native tiles, a second look confirms only fails) and upscale rules; read before any image QC.
+description: Source, transform and ship gates for image QC, plus resize and upscale rules; read before any image QC.
 ---
-# QC and Upscale Checklist
+# QC and Transform Checklist
 
-Stages 7-8 of the playbook: upscale every OK raw, then QC the finals once.
-QC is a local visual defect screen. Its verdicts are evidence, never visual
-approval or Adobe acceptance; Adobe's own checks decide acceptance.
+Stages 7-9 use three gates. **Source Gate** blocks concrete defects in the raw.
+**Transform Gate** compares the final with that raw and blocks regressions.
+**Ship Gate** checks file rules, similarity and truthful metadata. Concept
+strength and buyer fit are strategic notes, not technical failures. Every local
+verdict is evidence, never Adobe acceptance.
 
-## Final QC (after upscale)
+## Source and Transform Gates
 
 Look at each image on its own at full size, then at native-size crops of
 faces, hands, edges and any small detail. Mark pass or fail with a
@@ -15,11 +17,17 @@ one-line reason. Do not QC from contact sheets: a batch is 20-50 stills, not
 video frames, and finger, seam and pseudo-text defects disappear in thumbnails.
 Contact sheets are fine only for spotting look-alikes across the batch.
 
-### Who looks: a cheap reviewer per image; the lead sees fails only
+At Source Gate, fail only defects that can be pointed to in the pixels or a hard
+brief miss such as required copy space being occupied. At Transform Gate, compare
+the same raw and final regions and ask whether the transform added or amplified a
+defect. A transform failure gets one safer transform from the same raw before the
+source is discarded.
+
+### Who looks: a visual reviewer; the lead keeps compact evidence
 
 The look is volume work (the defects are visible), so a vision-capable
-reviewer at the cheapest tier the host offers takes one image per job; the lead
-opens no tile except a named fail. `adobe-stock-analytics qc-tiles <folder> --out <dir>` (needs Pillow; any other tool that crops works too) saves
+reviewer at the cheapest capable tier the host offers takes one image per job; the lead
+keeps the JSON evidence and project decision context. `adobe-stock-analytics qc-tiles <folder> --out <dir>` (needs Pillow; any other tool that crops works too) saves
 the 1600 px frame and 3x3 native tiles. Reviewer prompt ("Read tool" means whatever local
 file read the reviewer has):
 
@@ -30,7 +38,7 @@ Intended subject: [scenario one-liner].
 FAIL only for a defect you can point to: wrong finger count or a broken joint,
 an extra or ghost limb, melted or duplicated objects, letters/numbers/logos or
 garbled pseudo-text, a brand-like product, an oil-paint smear on the main subject,
-or a subject that does not match the intended one.
+or a literal hard-brief mismatch such as the wrong subject or missing required copy space.
 Also FAIL for upscale artifacts on the main subject: waxy or plastic skin,
 painted or smeared texture, halos or bright outlines around edges, tiling seams,
 wiry hair outlines, invented texture on flat surfaces.
@@ -38,14 +46,15 @@ NOT a defect: depth-of-field blur, a soft background, intended bokeh,
 intended glow lines or light overlays.
 Reply with JSON only:
 {"file": "...", "verdict": "pass|fail", "reason": "one line",
- "defects": [{"tile": "r?c?", "what": "..."}]}
+ "defects": [{"tile": "r?c?", "what": "..."}],
+ "strategic_notes": ["optional concept-strength or buyer-fit note"]}
 ```
 
 `[scenario one-liner]` comes from the registry (or the CSV title), never from the file name: a name is a weak description and
 makes "subject does not match" verdicts unreliable.
 
-Then follow SKILL.md stage 8: merge into `qc_decisions.json`, a second look
-confirms or overturns each fail at its named tile, passes are not re-opened.
+Then follow SKILL.md stage 8: merge into `qc_decisions.json`; an independent
+visual second look confirms or overturns each fail at its named tile.
 
 ### Pick your reviewer setup (by host capability)
 
@@ -54,7 +63,7 @@ Find the first row your host can do. Name the setup in `qc_decisions.json`
 
 | Your host can | Reviewer (first look) | Second look on fails | `mode` |
 |---|---|---|---|
-| start parallel workers (sub-agents, parallel tasks) on a cheap vision-capable tier that read local files | one worker per image, the prompt above, within the host's concurrency limit | the lead, at the named tile and its neighbours | `parallel` |
+| start parallel workers (sub-agents, parallel tasks) on a cheap vision-capable tier that read local files | one worker per image, the prompt above, within the host's concurrency limit | a different visual worker at the named tile and its neighbours | `parallel` |
 | start fresh contexts one after another (new session, new task, new chat) with vision | one fresh context per batch of a few images (one prompt per image, replies collected as rows) | a different fresh context, or the lead | `sequential` |
 | only the current context can see images | the lead, one image at a time, using the same prompt and pass/fail rules | the lead again, re-opening the named tile | `single-pass` (say it in the report: one context anchors on its own verdicts) |
 | see images only through an external provider call | ask the user to approve the provider call and the evidence write; without approval QC is `BLOCKED` | same | name the provider route |
@@ -70,7 +79,7 @@ Rules for every setup:
 4. A reply that is not valid JSON, names another file, or skips tiles is not a
    verdict. Run that image again in a fresh job once; if it fails again, the
    lead reviews it and the report says so.
-5. Never change a verdict without opening the image yourself.
+5. Never change a visual verdict without an independent visual review of the named evidence.
 6. A check that could not run (no reviewer, no Pillow, a screen that errored) leaves the image unknown and the package not ready.
    It is never a pass and never just a warning.
 
@@ -79,7 +88,7 @@ Rules for every setup:
 1. Collect all replies. Count them: one per final. A missing reply means the
    image was not reviewed (not a pass).
 2. Put every `pass` file name in `pass`.
-3. For every `fail`, the second look opens `frame.jpg` and the named tile, then
+3. For every `fail`, an independent second look opens `frame.jpg` and the named tile, then
    the neighbouring tiles if the defect is not there. Decide:
    - confirmed: the defect is real and is in the fail list above. The file goes
      in `fail` with a one-line reason.
@@ -146,7 +155,7 @@ More reviewer rules from real runs [REPO]:
 | Objects | melted or duplicated objects, impossible geometry, seams | [MULTI] |
 | Text-like marks | letters, numbers, sign-like pseudo-text, logos, watermarks | [ADOBE][REPO] (night-tower held for rooftop pseudo-text) |
 | IP | recognizable product design, brand-like shape, character, landmark | [ADOBE][MULTI] (a redrawn credit-card line art was still refused for IP) |
-| Buyer fit | message not readable in 1 second; no copy space when the brief asked for it | [MULTI] |
+| Hard brief constraint | literal wrong subject; no copy space when the brief required it | [MULTI] |
 | Distinctness | looks like another image in this batch or a common catalog image | [ADOBE][MULTI] |
 | Realism | plastic skin, painterly hair, light that does not match the scene | [REPO] |
 
@@ -155,6 +164,10 @@ Small stray text or a logo may be removed with an inpainting tool (one author
 uses IOPaint, open source) [SINGLE]; installing a new tool needs the user's OK.
 
 Never keep two near-identical images to "be safe". Choose the stronger one.
+
+Record weak concept clarity, buyer fit and marketability separately. They may
+change ranking or prompt strategy, but they do not turn a technically clean file
+into a QC failure.
 
 ## Measured limit of this QC [REPO]
 
@@ -170,14 +183,14 @@ artifacts that the prompt tells the reviewer to ignore.
 
 | Item | Rule | Tag |
 |---|---|---|
-| Engine | a local AI upscaler; never silently fall back to a plain resize. Recommend, then let the user choose (see "Which upscaler") | [REPO] |
+| Engine | use the least-transformative route that reaches the file gate; never silently switch between resize and AI upscale. Recommend, then let the user choose | [REPO] |
 | Size | 3840 px long edge, JPEG quality 95 (the size this project used). Keeping the full x4 output (about 25 MP from a 1448x1086 raw) is an option the user may choose; see "Which size" | [REPO] |
 | Minimum | Adobe minimum resolution is stated differently across older pages; check the live page before upload | [ADOBE] unresolved |
 | Factor | do not always use 4x; 2x-3x is enough for a ~1024x1536 source to pass 4 MP; 4x can make hair and skin look unnatural | [MULTI] |
 | Size (official) | Adobe help pages read 2026-10-13: JPEG, sRGB, 4-100 MP, file <= 45 MB; view at 100%; no watermark. Our gate matches. A 2026-10-10 post (Author E) says "45 MP / 100 MB" (wrong against Adobe) and recommends 4000x2667+, 6000x4000 premium; our 3840 px long edge (11.8-17.6 MP) is above it. Larger files need a real upscale, not a bigger 4x | [ADOBE] + [SINGLE] |
 | Model | for hair-, fur- or skin-heavy images, test 2x and a second model on one sample | [MULTI] |
 | Zoom check | inspect finals at 100-200% on hair, skin, hands, fabric, foliage | [MULTI] |
-| Source | upscale every OK raw, QC the finals, package only passed finals; build the CSV only from final bytes | [REPO] |
+| Source | Source Gate first; transform only technical passes; compare finals with raws; package only final passes | [REPO] |
 
 Alternatives reported by the community: Upscayl
 (free, local), Photoshop 2026 built-in 2x/4x (Firefly or Topaz). [SINGLE]

@@ -65,7 +65,8 @@ Public Adobe Stock pages show: result count, AI flag (`is_gentech`), creator, ca
 - `stock_upload_stage(plan_path, only?)` / CLI `upload-stage`: plan = the JSON written by `prepare-plan` (`ready_for_upload: true`, no failures, fresh). Every file is re-hashed; the extension fetches each file from the bridge (`/v1/file`, dispatched job only), re-checks sha256, drops them on the Uploads page's own drop zone, and reads the portal's "File types: All (N)" count back. Success = the count rose by exactly the number staged. A failed or partial stage stops the queue (never retried blindly). Protected folders can never be staged. `upload_stage.enabled` in `config/stock_analytics.json` is the user's switch, read on every use. Details: `knowledge/upload-and-portal.md`.
 - `stock_knowledge(topic)`: the know-how (mindset, niche method, workflow, QC, metadata, upload, community evidence) as markdown, served by the MCP itself; `index` lists topics. The MCP `initialize` reply carries the core rules as `instructions`.
 - `skills/adobe-stock/SKILL.md` + `knowledge/`: `python3 stock.py install-skill --confirm-write` copies them to `~/.claude/skills/adobe-stock/` (dry run without the flag).
-- Not live-verified yet: whether Adobe's uploader accepts files set this way. Probe with one file first.
+- Live-verified locally: staging and metadata have completed with count, keyword and flag verification while Submit remained untouched.
+  Adobe can change its portal at any time, so first use on another account should still be a one-file canary.
 
 ## Rules
 

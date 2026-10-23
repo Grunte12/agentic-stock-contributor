@@ -95,4 +95,4 @@ an adapter.
   objects, flames or wet reflective surfaces; no glass with people behind it (ghost duplicates). A scene that fails twice: keep the
   buyer intent, simplify the composition in a new prompt. Repeating a prompt does not keep the same person across a series.
 - Keep the provider name, model and settings in the run report. They do not go into titles or keywords [ADOBE].
-- Generation success is not QC and not Adobe acceptance. Next: upscale (stage 7), then QC the finals (stage 8).
+- Generation success is not QC and not Adobe acceptance. Next: Source Gate on the raw, then transform and compare the final against it.
