@@ -72,3 +72,18 @@ run, and off after. Staging fills the portal's New list; **you** click Submit.
 The workflow needs images, but this tool does not make them. Use any generator you are licensed to use. After Source Gate, test one
 canary and choose the least-transformative resize or upscaler that reaches 4 MP without visible regression. The workflow only needs
 the final JPEGs and a registry (see `examples/`). Read `docs/SAFETY.md` first.
+
+Choose from what the user actually has; none of these services is required:
+
+| Available capability | Route |
+|---|---|
+| GPT Bridge and a ChatGPT account with **Create image** available | Use the Bridge adapter. ChatGPT Free works, but image generation has a separate, stricter and changing limit; stop when ChatGPT reports the limit. Paid plans have higher limits, not a promised count. |
+| ChatGPT, but no GPT Bridge | Either [install GPT Bridge](https://github.com/Grunte12/gpt-bridge#install-agent-integrations) locally or use the adapter's hand-off sheet and save each result under its scenario filename. Installation is optional. |
+| Another generator | Use an API/CLI adapter when one already exists; otherwise use a hand-off sheet. The raw-file contract stays the same. |
+| Google AI Pro or paid Colab compute | A Colab adapter may batch transforms, verify downloads, then release the runtime. Availability and consumption still vary. |
+| Colab Free | An interactive notebook may receive a free GPU, but it is not guaranteed and free managed runtimes can terminate. Do not rely on it for unattended automation. |
+| No Colab or cloud GPU | Resize locally when the clean source already has enough detail; otherwise use a local upscaler such as Real-ESRGAN/Upscayl when the machine supports it. If neither route preserves quality, keep the file out rather than enlarge it blindly. |
+
+Current plan facts can change. Check [OpenAI's Free Tier FAQ](https://help.openai.com/en/articles/9275245-chatgpt-free-tier-faq),
+[ChatGPT Images availability](https://help.openai.com/en/articles/11084440-images-in-chatgpt), and
+[Google's Colab FAQ](https://research.google.com/colaboratory/faq.html) before promising capacity.

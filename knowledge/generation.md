@@ -7,6 +7,20 @@ This tool does not generate images and is not tied to one generator. The user ma
 generation, any image API, Google Flow, a local model or anything else. Your job here is to **ask, record and
 verify**, not to choose.
 
+## Availability and fallback
+
+Detect capability at the start of the run; do not infer it from a subscription name.
+
+| What is available | Use |
+|---|---|
+| GPT Bridge is installed and its readiness check passes | Use its MCP adapter with the user's selected ChatGPT account. The Bridge does not add or bypass quota. |
+| ChatGPT Free exposes **Create image** | GPT Bridge can use that account after local installation and pairing, subject to the account's smaller image limit. OpenAI says image creation is available on Free, while image generation has a separate limit and paid plans have higher limits. Stop on the in-product limit; never resend the prompt. [OpenAI Free Tier FAQ](https://help.openai.com/en/articles/9275245-chatgpt-free-tier-faq), read 2026-10-23. |
+| ChatGPT is available but GPT Bridge is not | Offer the local [GPT Bridge installer](https://github.com/Grunte12/gpt-bridge#install-agent-integrations), or create a hand-off sheet if the user does not want to install it. Do not make installation a batch prerequisite. |
+| No ChatGPT image access | Use another user-approved generator or a hand-off sheet. Keep the same scenario ids, filenames and generation log. |
+
+The readiness check, not the plan label, decides whether the route is usable today. Limits change, so record a limit as
+`unmeasured` until the provider reports it; never promise a fixed number of images.
+
 ## Grill the user until nothing is open (goal mode)
 
 The method follows the "grilling" skill by Matt Pocock (MIT, `skills/productivity/grilling` in github.com/mattpocock/skills; `grill-me` is its short trigger): treat the choices as a tree, ask in rounds,

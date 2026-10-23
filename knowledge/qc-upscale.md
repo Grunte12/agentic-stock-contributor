@@ -181,6 +181,24 @@ artifacts that the prompt tells the reviewer to ignore.
 
 ## Upscale
 
+### Runtime availability and fallback
+
+The transform decision and the place it runs are separate. Pick the least-transformative acceptable transform first, then use the
+first runtime that can execute it without changing the chosen method.
+
+| Runtime available | Guidance |
+|---|---|
+| Local machine | Default fallback. A deterministic resize needs no cloud GPU; Real-ESRGAN/Upscayl needs compatible local hardware. Verify one canary and record the backend. |
+| Colab Free | It can provide free GPU/TPU access, but expensive resources are heavily restricted, hardware and limits vary, and runtimes may terminate. Use it interactively for an occasional canary or small batch; do not build unattended remote control around the free managed runtime. |
+| Paid Colab / positive compute-unit balance | Suitable for a batch when local processing is materially slower. Hardware remains subject to availability. Upload once, process the batch, download and verify every file, then release the runtime and confirm no assignment remains active. |
+| No usable GPU | Use a deterministic resize only when the clean raw still holds enough detail at the required size. Otherwise hold the image or choose another user-approved service. |
+
+Google states that Colab Free is available without charge and may provide GPUs, but resources are neither guaranteed nor unlimited;
+limits and GPU types vary and free notebooks can run for at most 12 hours depending on availability and usage. Paid users also have
+dynamic availability. [Google Colab FAQ](https://research.google.com/colaboratory/faq.html), read 2026-10-23. Google currently states
+that eligible paid Google AI Pro members receive 200 Colab compute units; verify the live plan before relying on that number.
+[Google AI Pro benefits](https://support.google.com/googleone/answer/14534406), read 2026-10-23.
+
 | Item | Rule | Tag |
 |---|---|---|
 | Engine | use the least-transformative route that reaches the file gate; never silently switch between resize and AI upscale. Recommend, then let the user choose | [REPO] |

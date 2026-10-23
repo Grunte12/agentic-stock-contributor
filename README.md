@@ -22,7 +22,8 @@ every agent you use, so Claude, Codex or Cursor can pick up where another left o
 toolkit without touching your work.
 
 Plus local commands (stdlib only) for the steps between "images exist" and "ready to stage": `lint-registry`, `check-images`, `qc-tiles`,
-`check-qc`, `build-csv`, `prepare-plan`. You bring your own image generator and choose a resize or upscaler after a canary comparison.
+`check-qc`, `build-csv`, `prepare-plan`. You bring your own image generator and choose a resize or upscaler after a canary comparison;
+the setup guide covers ChatGPT Free, no GPT Bridge, Colab Free and fully local fallbacks.
 
 **Start:** [docs/SETUP.md](docs/SETUP.md) (about 10 minutes) · **Safety, limits, terms:** [docs/SAFETY.md](docs/SAFETY.md) ·
 **Workflow:** [knowledge/production-workflow.md](knowledge/production-workflow.md) · **Agents:** [AGENTS.md](AGENTS.md) ·
