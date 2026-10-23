@@ -1,5 +1,11 @@
 # Changelog
 
+## Toolkit 0.14.2
+
+- Image review now uses Source → Transform → Ship gates: concrete raw defects, transform regressions, then file/similarity/metadata checks. A safer transform can recover a clean source without treating concept strength as a technical failure.
+- Setup and know-how now cover ChatGPT Free, no GPT Bridge, Colab Free, paid Colab and fully local generation/transform fallbacks. Optional services are detected at run time and are not prerequisites.
+- Fresh installation now creates and validates `workspace/STATE.md`, `LOG.md` and `PLAYBOOK.md` before the skill can read them. Tests keep the pinned install tag, package version and changelog synchronized.
+
 ## Toolkit 0.14.1
 
 - Agents can call `stock_restart_server` to restart the MCP process in place while preserving its stdio connection, queued jobs and sticky stop. `stock_status` now reports a `server_instance_id` so the restart can be verified without asking the user to restart the host.

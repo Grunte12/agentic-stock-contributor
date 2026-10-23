@@ -12,7 +12,8 @@ def ahash(path, size=8):
     from PIL import Image, ImageOps
     with Image.open(path) as im:
         g = ImageOps.exif_transpose(im).convert("L").resize((size, size), Image.LANCZOS)
-        px = list(g.getdata())
+        pixels = getattr(g, "get_flattened_data", g.getdata)
+        px = list(pixels())
     mean = sum(px) / len(px)
     return sum(1 << i for i, v in enumerate(px) if v >= mean)
 

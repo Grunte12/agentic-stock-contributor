@@ -68,7 +68,8 @@ class OutcomeReportTests(unittest.TestCase):
         self.assertEqual(r["by_tag"]["people"]["(untagged)"]["files"], 4)
         self.assertEqual(r["by_group"]["cafe people"]["accepted"], 1)
         path = outcomes.write_ledger(r, self.d / "ledger.csv")
-        rows = list(csv.DictReader(open(path)))
+        with open(path, newline="") as ledger:
+            rows = list(csv.DictReader(ledger))
         self.assertEqual(len(rows), 7)
         self.assertIn("people", rows[0])
 

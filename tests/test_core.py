@@ -1,4 +1,5 @@
 import unittest
+from pathlib import Path
 
 from helpers import CFG, fixture, ingest_search, new_store, seeded_store
 from adobe_stock_analytics import metrics as M, parsers, report, urls, verify
@@ -166,7 +167,7 @@ class TrendPortfolioTests(unittest.TestCase):
         from adobe_stock_analytics import trends
         st = new_store()
         f = os.path.join(tempfile.mkdtemp(), "t.csv")
-        open(f, "w").write("Category: All categories\n\nWeek,matcha latte: (Worldwide)\n2026-01-04,50\n2026-01-11,<1\n2026-01-18,70\n")
+        Path(f).write_text("Category: All categories\n\nWeek,matcha latte: (Worldwide)\n2026-01-04,50\n2026-01-11,<1\n2026-01-18,70\n")
         r = trends.import_trends(st, f)
         self.assertEqual(r["points"], 3)
         self.assertTrue(trends.import_trends(st, f)["already_imported"])
@@ -178,13 +179,13 @@ class TrendPortfolioTests(unittest.TestCase):
         from adobe_stock_analytics import portfolio
         st = new_store()
         f = os.path.join(tempfile.mkdtemp(), "p.csv")
-        open(f, "w").write("asset_id,Downloads,group\n1,3,onboarding\n2,1,onboarding\n3,x,onboarding\n4,0,agents\n")
+        Path(f).write_text("asset_id,Downloads,group\n1,3,onboarding\n2,1,onboarding\n3,x,onboarding\n4,0,agents\n")
         self.assertEqual(portfolio.import_portfolio(st, f)["rows"], 3)  # the non-numeric row is skipped
         r = report.report(st, CFG, portfolio=True)
         self.assertIn("| onboarding | 2 | 4 | 2.00 |", r["markdown"])
         self.assertTrue(verify.verify_doc(st, r["markdown"])["ok"])
         with self.assertRaises(ValueError):
-            open(f, "w").write("a,b\n1,2\n")
+            Path(f).write_text("a,b\n1,2\n")
             portfolio.import_portfolio(st, f)
 
 

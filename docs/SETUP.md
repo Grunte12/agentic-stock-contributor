@@ -11,6 +11,8 @@ MCP client), and an Adobe Stock contributor account (only for portfolio, outcome
 git clone <this repository> adobe-stock-analytics
 cd adobe-stock-analytics
 python3 stock.py doctor
+python3 stock.py init
+python3 stock.py lint-workspace
 ```
 
 No `pip install` is needed (standard library only). Optional: `python3 -m pip install Pillow` for `qc-tiles`.

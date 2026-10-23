@@ -46,9 +46,9 @@ stay on this computer (they are never uploaded to GitHub)." Recommend `~/agentic
 in another folder, use that. Below, `<install folder>` is their answer.
 
 ```bash
-git clone --branch v0.14.0 --depth 1 https://github.com/Grunte12/agentic-stock-contributor <install folder>
+git clone --branch v0.14.2 --depth 1 https://github.com/Grunte12/agentic-stock-contributor <install folder>
 cd <install folder>
-git rev-parse HEAD   # must equal the commit hash in the GitHub release notes for v0.14.0 (Releases page)
+git rev-parse HEAD   # must equal the commit shown for tag v0.14.2 on GitHub
 ```
 
 If `git` is missing, ask the person to install it (git-scm.com) or download the release zip and unpack it to the same folder.
@@ -66,9 +66,13 @@ yourself. Where this file says `python3`, use `py -3` on Windows. `python3 stock
 
 ```bash
 python3 stock.py doctor
+python3 stock.py init
+python3 stock.py lint-workspace
 ```
 
-`ok` must be true (Python and config). Items still open, such as the extension or the MCP connection, are listed in `next`; you do them in the steps below.
+`doctor` must report `ok: true` (Python and config), and `lint-workspace` must also report `ok: true`. `init` creates the three
+private shared-state files and never overwrites them. Items still open, such as the extension or MCP connection, are listed in
+`doctor.next`; you do them below.
 
 ## Step 4. Connect the MCP server (needs the person's yes)
 

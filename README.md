@@ -17,7 +17,7 @@ package your images, stage a verified upload for your final click, and read the 
 | **Chrome extension** | Reads Adobe Stock pages and your contributor dashboard for the server; never clicks Submit |
 
 **You work inside this folder.** Clone it once; your research, batches, packages and results go in `workspace/` (never pushed,
-see [workspace/README.md](workspace/README.md)), and every folder there has a guide the agent follows. Three files in it (`STATE.md`, `LOG.md`, `PLAYBOOK.md`) are the shared memory of
+see [workspace/README.md](workspace/README.md)), and every folder there has a guide the agent follows. Setup creates three files in it (`STATE.md`, `LOG.md`, `PLAYBOOK.md`) as the shared memory of
 every agent you use, so Claude, Codex or Cursor can pick up where another left off, and lessons from Adobe's results carry over. `git pull` updates the
 toolkit without touching your work.
 
