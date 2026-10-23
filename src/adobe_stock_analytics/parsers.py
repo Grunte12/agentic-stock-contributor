@@ -8,6 +8,8 @@ _COUNT = re.compile(
     r"(\d[\d,.\s  ]*)\s*(?:ผลลัพธ์|results?|résultats?|Ergebnisse|resultados?|risultati|結果|검색결과)",
     re.I,
 )
+# Adobe's "no exact match, related results below" heading: the exact phrase has 0 results; the rows are related assets.
+_NO_MATCH = re.compile(r"ไม่พบผลลัพธ์ที่ตรงกัน|เราไม่พบผลลัพธ์(?:\s+\S+)?\s+สำหรับ|we couldn't find (?:any )?(?:matches|results)|no (?:exact )?(?:matches|results) for", re.I)
 BLOCKED_STATES = {"captcha", "restricted", "signin"}
 BLOCKED_HTTP = {403, 429}
 
@@ -64,6 +66,8 @@ def parse_search(payload, expected=None):
     if rows is None:
         return _result("unknown", "row_shape")
     results = parse_count(payload.get("results_text"))
+    if results is None and _NO_MATCH.search(payload.get("results_text") or ""):
+        results = 0
     if results is None:
         return _result("unknown", "no_count_text", rows=rows)
     on_page = urls.read_back(payload.get("page_url") or "")

@@ -167,8 +167,9 @@ pass it.
 
 The MCP server reads `config/stock_analytics.json` once when it starts.
 Pacing, events, lead weeks, bands, rating rules and opportunity weights change
-only after the MCP server process restarts (restart the host's MCP connection
-or the host). Exceptions: `upload_stage.enabled` and `upload_metadata.enabled`
+only after the MCP server process restarts. Call `stock_restart_server`; it
+restarts in place without clearing queued jobs or the sticky stop, then confirm
+`server_instance_id` changed with `stock_status`. Exceptions: `upload_stage.enabled` and `upload_metadata.enabled`
 (and the rest of those two sections) are read again on every use, so the
 user's switch works at once. After a restart, call `stock_status` again. Never
 edit the config yourself; the user owns it.

@@ -1,5 +1,9 @@
 # Changelog
 
+## Toolkit 0.14.1
+
+- Agents can call `stock_restart_server` to restart the MCP process in place while preserving its stdio connection, queued jobs and sticky stop. `stock_status` now reports a `server_instance_id` so the restart can be verified without asking the user to restart the host.
+
 ## Toolkit 0.14.0
 
 - Shared state for every agent (any host): `workspace/STATE.md` (now: focus, runs, decisions waiting on the user as `D-NNN`, stops, next, which agent is working), `LOG.md` (append-only history) and `PLAYBOOK.md` (lessons `L-NNN` with evidence paths and helpful/harmful counts, and the user's standing choices `C-NNN`). Templates in `examples/workspace/`. Design follows Anthropic's long-running harness (progress file plus structured state), OpenAI harness engineering (short AGENTS.md as a map), ACE and ExpeL (itemized, delta-updated lessons with counters, never full rewrites) and evidence that self-diagnosed lessons and planted memory are unreliable.

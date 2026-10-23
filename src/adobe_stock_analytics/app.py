@@ -1,5 +1,6 @@
 """Tool implementations shared by the MCP server and the CLI. Outputs carry obs_id / metric_id for every number."""
 import json
+import os
 import time
 from pathlib import Path
 
@@ -21,6 +22,9 @@ class App:
         self.bridge = None
         self.bridge_error = None
         self.want_bridge = start_bridge
+        self.server_started_at = utcnow()
+        self.server_instance_id = f"{os.getpid()}-{time.time_ns()}"
+        self.restart_requested = False
         self.ensure_bridge()
 
     def ensure_bridge(self):
@@ -42,6 +46,8 @@ class App:
         return {"kind": "operational", "bridge_connected": bool(self.bridge and self.bridge.connected()),
                 "bridge_error": self.bridge_error,
                 "extension_version": self.bridge.ext_version if self.bridge else None,
+                "server_pid": os.getpid(), "server_started_at": self.server_started_at,
+                "server_instance_id": self.server_instance_id,
                 **self.queue.status()}
 
     def stock_scan(self, requests):
@@ -263,6 +269,12 @@ class App:
     def stock_stop(self):
         self.queue.stop("agent_requested")
         return {"stop": self.queue.stop_state()}
+
+    def stock_restart_server(self):
+        """Ask the stdio loop to exec itself after returning this tool result."""
+        self.restart_requested = True
+        return {"restart_requested": True, "stop": self.queue.stop_state(),
+                "note": "The server restarts in place; queued jobs and the stop state are preserved."}
 
     def stock_resume(self):
         if not self.cfg["stop"]["allow_agent_resume"]:

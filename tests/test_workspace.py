@@ -61,6 +61,9 @@ class WorkspaceTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             W.retire("L-001", "again", ws=self.ws)
         self.assertEqual(W.add("Third", evidence=[str(self.ev)], ws=self.ws)["id"], "L-003")
+        W.retire("L-003", "superseded", ws=self.ws)
+        self.assertEqual(W.add("Fourth", evidence=[str(self.ev)], ws=self.ws)["id"], "L-004")
+        self.assertTrue(self.lint()["ok"])
 
     def test_choice_needs_source_and_rejects_duplicates_and_pipes(self):
         with self.assertRaises(ValueError):

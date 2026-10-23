@@ -4,6 +4,7 @@ import tempfile
 import threading
 import unittest
 import urllib.request
+from unittest import mock
 
 from helpers import CFG, fixture, new_store
 from adobe_stock_analytics import mcp_server
@@ -233,6 +234,23 @@ class McpContractTests(unittest.TestCase):
         self.assertEqual(len(r["job_ids"]), 1)
         self.assertIn("user-only", self.call("stock_resume"))
         self.assertEqual(self.call("stock_stop")["stop"]["reason"], "agent_requested")
+
+    def test_restart_is_exposed_and_preserves_stop(self):
+        self.app.queue.stop("captcha")
+        result = self.call("stock_restart_server")
+        self.assertTrue(result["restart_requested"])
+        self.assertEqual(result["stop"]["reason"], "captcha")
+
+    def test_stdio_restart_execs_after_flushing_result(self):
+        inp = io.StringIO(json.dumps({"jsonrpc": "2.0", "id": 1, "method": "tools/call",
+                                     "params": {"name": "stock_restart_server", "arguments": {}}}) + "\n")
+        out = io.StringIO()
+        with mock.patch.object(mcp_server.os, "execv") as execv:
+            mcp_server.serve(self.app, inp, out)
+        response = json.loads(out.getvalue())
+        self.assertTrue(json.loads(response["result"]["content"][0]["text"])["restart_requested"])
+        execv.assert_called_once()
+        self.assertEqual(execv.call_args.args[0], mcp_server.sys.executable)
 
     def test_stdio_loop(self):
         inp = io.StringIO("\n".join(json.dumps(m) for m in (

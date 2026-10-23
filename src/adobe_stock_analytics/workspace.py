@@ -81,7 +81,7 @@ def add(text, kind="lesson", evidence=(), source=None, tags=(), ws=WORKSPACE, to
         prefix, src, value, heading = "C", "source", _clean(source), "## Standing choices (user)"
     else:
         raise ValueError("kind must be lesson or choice")
-    ids = [int(m["id"][2:]) for _, m in _entries(lines) if m["id"][0] == prefix]
+    ids = [int(m[1]) for line in lines if (m := re.match(rf"^- \[{prefix}-(\d{{3}})\]", line))]  # retired ids too
     eid = f"{prefix}-{max(ids, default=0) + 1:03d}"
     if any(m["text"].lower() == text.lower() for _, m in _entries(lines)):
         raise ValueError("the same text is already in the playbook: vote on it instead")

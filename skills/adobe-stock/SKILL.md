@@ -34,7 +34,8 @@ one step at a time, and ask choices with your host's question tool. Do the work 
 - `stock_wait` waits at most 120 s per call; call it again with the unfinished job ids until none is `queued` or `dispatched`,
   or a stop appears. Do not queue the same scans again.
 - The MCP server reads the config once at start. Changed pacing, events, lead weeks, bands or weights apply only after the
-  server restarts. The `upload_stage` and `upload_metadata` switches are read on every use.
+  server restarts. Call `stock_restart_server`, then confirm `server_instance_id` changed with `stock_status`; queued jobs and
+  the sticky stop are preserved. The `upload_stage` and `upload_metadata` switches are read on every use.
 - `stock_verify_doc` exempts dates (YYYY-MM-DD), backticked text, headings, list numbers and fenced code; every other number
   needs a `[m:<metric_id>]` on its line. Keep run counts in the run report, not the decision doc.
 - If a doc and the tool's printed output disagree, the output wins.

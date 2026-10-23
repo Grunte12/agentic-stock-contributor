@@ -1,5 +1,6 @@
 """Minimal MCP server over stdio (newline-delimited JSON-RPC 2.0). No third-party dependency."""
 import json
+import os
 import sys
 
 from . import __version__
@@ -59,6 +60,7 @@ TOOLS = {
     "stock_dashboard": ("Refresh metrics and return a localhost link to the visual dashboard (charts) for the user to open.", obj({"refresh": {"type": "boolean"}})),
     "stock_verify_doc": ("Fail a decision doc that has untraceable numbers or edited tables.", obj({"path": STR}, ["path"])),
     "stock_stop": ("Stop the queue now.", obj({})),
+    "stock_restart_server": ("Restart this MCP server in place after returning. Preserves queued jobs and the stop state; does not resume the queue.", obj({})),
     "stock_resume": ("Resume the queue (refused unless the user config allows it).", obj({})),
 }
 
@@ -112,6 +114,12 @@ def serve(app, stdin=None, stdout=None):
             out = {"jsonrpc": "2.0", "id": msg["id"], "error": {"code": -32601, "message": "method not found"}}
         stdout.write(json.dumps(out, ensure_ascii=False) + "\n")
         stdout.flush()
+        if app.restart_requested:
+            app.restart_requested = False
+            if app.bridge:
+                app.bridge.stop()
+            original = getattr(sys, "orig_argv", None) or sys.argv
+            os.execv(sys.executable, [sys.executable, *original[1:]])
 
 
 def main():

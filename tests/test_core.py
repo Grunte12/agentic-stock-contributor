@@ -33,6 +33,14 @@ class ParserTests(unittest.TestCase):
         self.assertIsNone(parsers.parse_count("no count here"))
         self.assertIsNone(parsers.parse_count(None))
 
+    def test_no_exact_match_page_counts_zero(self):
+        for text in ("เราไม่พบผลลัพธ์ที่ตรงกันสำหรับ bakery pre order bags ผลลัพธ์ที่เกี่ยวข้องถูกแสดงไว้ด้านล่าง",
+                     "เราไม่พบผลลัพธ์ ภาพ สำหรับ bakery cold chain ingredient tag"):
+            r = parsers.parse_search({"results_text": text, "rows": [], "page_url": "https://stock.adobe.com/th/search?k=x"})
+            self.assertEqual((r["status"], r["results"]), ("ok", 0))
+        r = parsers.parse_search({"results_text": "nothing here", "rows": []})
+        self.assertEqual(r["reason"], "no_count_text")
+
     def test_fixture_search_ok(self):
         st = new_store()
         _, p = ingest_search(st, "search_matcha_p0_1.json", "matcha latte", "all", "relevance")
