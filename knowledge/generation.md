@@ -104,9 +104,12 @@ an adapter.
 - **One failed image never blocks the batch**: quarantine per image; promote the passing ones.
 - **Prompt length**: about 600-1000 characters worked; about 2000-character prompts returned text instead of an image (one chat
   provider, 2026-08) [REPO].
-- **Prompt craft from refusals and fails** [REPO]: keep text-bearing objects out (receipts, labels, packaging, documents, book
-  spines, screens with UI): they come back with pseudo-text. One dominant subject at 30%+ of the frame; few props; no tiny repeated
-  objects, flames or wet reflective surfaces; no glass with people behind it (ghost duplicates). A scene that fails twice: keep the
-  buyer intent, simplify the composition in a new prompt. Repeating a prompt does not keep the same person across a series.
+- **Prompt craft**: describe one observable business action, the physical relationships it needs, and the useful composition.
+  For AI concepts, show the monitoring, verification or human sign-off action rather than relying on an invisible capability
+  assigned to a generic box. Specify critical connections or routes (a sensor's dedicated cable connector; a continuous step-free
+  path to the entrance). Add only constraints that prevent a concrete ambiguity; avoid blanket bans on props or long negative lists.
+- **Distinct concepts**: compare the intended action and composition with earlier work before generating. A new customer problem,
+  action or visual structure is more meaningful than changing only color or camera angle; it still does not guarantee acceptance.
+  Repeating a prompt does not keep the same person across a series.
 - Keep the provider name, model and settings in the run report. They do not go into titles or keywords [ADOBE].
 - Generation success is not QC and not Adobe acceptance. Next: Source Gate on the raw, then transform and compare the final against it.

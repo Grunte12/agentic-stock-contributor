@@ -12,13 +12,14 @@ verdict is evidence, never Adobe acceptance.
 ## Source and Transform Gates
 
 Look at each image on its own at full size, then at native-size crops of
-faces, hands, edges and any small detail. Mark pass or fail with a
-one-line reason. Do not QC from contact sheets: a batch is 20-50 stills, not
+faces, hands, edges and any small detail. Record pass, fail or uncertain with a
+one-line reason and localize concerns. Do not QC from contact sheets: a batch is 20-50 stills, not
 video frames, and finger, seam and pseudo-text defects disappear in thumbnails.
 Contact sheets are fine only for spotting look-alikes across the batch.
 
-At Source Gate, fail only defects that can be pointed to in the pixels or a hard
-brief miss such as required copy space being occupied. At Transform Gate, compare
+At Source Gate, distinguish technical defects from hard brief misses (such as occupied required copy space)
+and strategic notes. Record brief misses separately in the existing notes; do not call them technical defects.
+An unfamiliar mechanism or unclear business meaning alone does not prove impossible geometry. At Transform Gate, compare
 the same raw and final regions and ask whether the transform added or amplified a
 defect. A transform failure gets one safer transform from the same raw before the
 source is discarded.
@@ -38,14 +39,17 @@ Intended subject: [scenario one-liner].
 FAIL only for a defect you can point to: wrong finger count or a broken joint,
 an extra or ghost limb, melted or duplicated objects, letters/numbers/logos or
 garbled pseudo-text, a brand-like product, an oil-paint smear on the main subject,
-or a literal hard-brief mismatch such as the wrong subject or missing required copy space.
+or other demonstrably impossible geometry. Report hard-brief misses separately in
+strategic_notes with a "brief:" prefix; do not label unclear AI meaning a technical defect.
 Also FAIL for upscale artifacts on the main subject: waxy or plastic skin,
 painted or smeared texture, halos or bright outlines around edges, tiling seams,
 wiry hair outlines, invented texture on flat surfaces.
 NOT a defect: depth-of-field blur, a soft background, intended bokeh,
-intended glow lines or light overlays.
+intended glow lines or light overlays, plausible wear, casting texture or keyed contacts.
+If a material suspected defect has a plausible physical explanation you cannot resolve, use
+uncertain and state what needs checking; do not infer a defect from an Adobe rejection label.
 Reply with JSON only:
-{"file": "...", "verdict": "pass|fail", "reason": "one line",
+{"file": "...", "verdict": "pass|fail|uncertain", "reason": "one line",
  "defects": [{"tile": "r?c?", "what": "..."}],
  "strategic_notes": ["optional concept-strength or buyer-fit note"]}
 ```
@@ -55,6 +59,8 @@ makes "subject does not match" verdicts unreliable.
 
 Then follow SKILL.md stage 8: merge into `qc_decisions.json`; an independent
 visual second look confirms or overturns each fail at its named tile.
+Use that same second look for uncertainty that could change readiness; match localized findings afterward.
+Unresolved uncertainty stays out of the package, not in the confirmed fail list.
 
 ### Pick your reviewer setup (by host capability)
 
@@ -87,9 +93,9 @@ Rules for every setup:
 
 1. Collect all replies. Count them: one per final. A missing reply means the
    image was not reviewed (not a pass).
-2. Put every `pass` file name in `pass`.
-3. For every `fail`, an independent second look opens `frame.jpg` and the named tile, then
-   the neighbouring tiles if the defect is not there. Decide:
+2. Put technically passing files with no unresolved hard brief miss in `pass`. Keep unresolved `uncertain` files and brief holds
+   outside the package, with the reason in the run report; neither is a confirmed technical fail.
+3. For every `fail` or decision-relevant uncertainty, use the independent second look above. Decide:
    - confirmed: the defect is real and is in the fail list above. The file goes
      in `fail` with a one-line reason.
    - overturned: the defect is not there, or it is on the not-a-defect list.
@@ -115,7 +121,9 @@ Rules for every setup:
    }
    ```
 
-   `pass` + `fail` together must list every final exactly once. Use file names,
+   Keep the raw/source path, transform and any overturned finding with its reason in the existing notes or linked reviewer evidence;
+   the final SHA-256 identifies which bytes the decision covers. Do not reuse a superseded verdict for a different final.
+   `pass` + `fail` together must list every reviewed, resolved final exactly once; held files stay outside the package. Use file names,
    not scenario ids, because `check-qc` and `prepare-plan` match by file name.
 5. Optional: measure sharpness with any tool you like (for example Laplacian variance); it gates nothing.
 
@@ -134,8 +142,8 @@ Never write the record by hand without a reviewer's replies behind it.
 First use (wave 1, 2026-10-10) [REPO]: native tiles caught 3 defects that a
 downscaled review missed (cuff pseudo-text, book-spine pseudo-text, a smeared
 robot arm). The first prompt allowed "hold", and the reviewer put 16 of 18 on
-hold, mostly for "soft fingers". That is why the prompt is now pass/fail with
-an explicit not-a-defect list. The reviewer also named the wrong tile once, so
+hold, mostly for "soft fingers". Keep the explicit not-a-defect list and reserve uncertainty
+for a localized concern that could change the decision. The reviewer also named the wrong tile once, so
 search neighbouring tiles when a named defect is not where it said.
 
 Why upscale artifacts are on the fail list (2026-10-16) [REPO, one account]: the earlier prompt called soft skin
@@ -144,7 +152,7 @@ from upscaling "not a defect". The batches with a strict post-upscale artifact v
 That batch was also all people scenes, so this is a hypothesis: count what the new rule fails and compare outcomes.
 
 More reviewer rules from real runs [REPO]:
-- A whole batch with zero fails is unusual (one run passed 28 of 28). Open a few finals yourself at native tiles before trusting it.
+- A zero-fail batch is not itself suspicious; judge localized evidence, not an expected rejection quota.
 - Rear or side views lower face risk, not hair, ear, hand and body defects; check those tiles.
 - Validate every reply yourself (JSON shape, file name, all tiles read). Never trust a model's bare "pass".
 - Scores from another rubric or scale are not comparable; keep one rubric per project.
@@ -155,8 +163,8 @@ More reviewer rules from real runs [REPO]:
 | Objects | melted or duplicated objects, impossible geometry, seams | [MULTI] |
 | Text-like marks | letters, numbers, sign-like pseudo-text, logos, watermarks | [ADOBE][REPO] (night-tower held for rooftop pseudo-text) |
 | IP | recognizable product design, brand-like shape, character, landmark | [ADOBE][MULTI] (a redrawn credit-card line art was still refused for IP) |
-| Hard brief constraint | literal wrong subject; no copy space when the brief required it | [MULTI] |
-| Distinctness | looks like another image in this batch or a common catalog image | [ADOBE][MULTI] |
+| Hard brief constraint (separate hold) | literal wrong subject; no required copy space; required route/action not shown | [MULTI] |
+| Distinctness (Ship Gate) | compare concept, action and composition with earlier work; a technical pass does not settle similarity | [ADOBE][MULTI] |
 | Realism | plastic skin, painterly hair, light that does not match the scene | [REPO] |
 
 Reject rather than repair: heavy AI editing of a weak image rarely helps.
@@ -176,8 +184,9 @@ as "Quality Issues" and 2 of 4 lead-confirmed fails; a Laplacian sharpness probe
 and other local proxies did not separate them either
 (one contributor account, 2026-10; unmeasured elsewhere). So QC removes obvious defects; it
 does not predict acceptance. Never write "passed QC, so it will be accepted".
-Untested hypothesis: Adobe's "Tech problems" cause may be softness or upscale
-artifacts that the prompt tells the reviewer to ignore.
+A later Luna Max blind audit (2026-10-27, one account) likewise found no definite technical failures among six
+quality refusals and nine accepted controls; three in each group were uncertain. All three similarity refusals
+technically passed. These selected samples do not establish Adobe's hidden cause or support a blanket stricter gate.
 
 ## Upscale
 
@@ -263,8 +272,9 @@ python3 stock.py check-images <final_dir>
 Record mean difference final vs raw if you compute it. The native-tile review
 is the zoom check. Screen look-alikes: `python3 stock.py similar <final_dir> --against <earlier submitted folder> [--against ...]`
 (needs Pillow; average hash, Hamming distance 8 or less). Include folders whose upload state is unknown: treat them as possibly
-submitted. It is a proxy [REPO]: Adobe refused a file as similar whose nearest local pair a screen had rated clear (2026-08),
-and Adobe compares against its whole collection, not only yours. For each pair keep the stronger image or split the two across waves after a look;
+submitted. Also compare the business action and composition against earlier work; pixel hashes alone miss semantic similarity.
+Cosmetic changes or splitting near-duplicates across waves do not establish distinctness. It is a proxy [REPO]: Adobe refused a file as similar whose nearest local pair a screen had rated clear (2026-08),
+and Adobe compares against its whole collection, not only yours. For each pair recommend keeping the stronger distinct image after a look;
 more than 3 near-variants of one concept go to the user. Never drop files automatically. Record each pair decision in the run
 report with both files' SHA-256; replacing either file makes that decision stale, so screen again.
 A technical-gate failure (size, format, file size) is fixed by finding why the upscale step produced it and rerunning that step,
