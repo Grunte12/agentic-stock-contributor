@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">Agentic Stock Contributor architecture</title>
+  <desc id="desc">An independent toolkit with MCP and CLI entry points, shared application core, evidence and workspace storage, a durable browser queue, Chrome extension and Adobe Stock.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0,8 3,0 6" fill="#667085"/>
+    </marker>
+    <marker id="arrow-blue" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0,8 3,0 6" fill="#2563eb"/>
+    </marker>
+    <style>
+      .sans{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Arial,sans-serif}
+      .mono{font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace}
+      .title{font-size:34px;font-weight:650;fill:#101828;letter-spacing:-.03em}
+      .subtitle{font-size:17px;font-weight:400;fill:#667085}
+      .eyebrow{font-size:11px;font-weight:650;fill:#667085;letter-spacing:.12em}
+      .node-title{font-size:16px;font-weight:650;fill:#101828}
+      .node-sub{font-size:12px;font-weight:400;fill:#667085}
+      .label{font-size:11px;font-weight:500;fill:#667085}
+      .node{fill:#fff;stroke:#d0d5dd;stroke-width:1.2}
+      .node-soft{fill:#f2f4f7;stroke:#d0d5dd;stroke-width:1.2}
+      .node-focus{fill:#eff6ff;stroke:#2563eb;stroke-width:1.5}
+      .boundary{fill:#fff;fill-opacity:.55;stroke:#d0d5dd;stroke-width:1.1;stroke-dasharray:5 5}
+      .line{fill:none;stroke:#667085;stroke-width:1.5;marker-end:url(#arrow)}
+      .line-blue{fill:none;stroke:#2563eb;stroke-width:1.7;marker-end:url(#arrow-blue)}
+      .line-dashed{fill:none;stroke:#98a2b3;stroke-width:1.3;stroke-dasharray:5 5;marker-end:url(#arrow)}
+    </style>
+  </defs>
+
+  <rect width="1600" height="900" fill="#f8fafc"/>
+  <text x="64" y="68" class="sans title">Agentic Stock Contributor</text>
+  <text x="64" y="99" class="sans subtitle">Independent toolkit. Any compatible agent can connect directly through MCP or the CLI.</text>
+
+  <rect x="304" y="156" width="1156" height="594" rx="12" class="boundary"/>
+  <rect x="328" y="145" width="208" height="24" fill="#f8fafc"/>
+  <text x="336" y="162" class="sans eyebrow">REPOSITORY BOUNDARY</text>
+
+  <!-- Connections are drawn before nodes. -->
+  <path d="M248 306H352" class="line-blue"/>
+  <path d="M568 306H656" class="line-blue"/>
+  <path d="M568 486H600Q616 486 616 470V372Q616 356 632 356H656" class="line"/>
+  <path d="M896 300H944Q960 300 960 284V248Q960 232 976 232H1000" class="line"/>
+  <path d="M896 356H1000" class="line"/>
+  <path d="M896 412H944Q960 412 960 428V536Q960 552 976 552H1000" class="line-blue"/>
+  <path d="M1184 552H1232" class="line-blue"/>
+  <path d="M1424 552H1472" class="line-blue"/>
+  <path d="M1000 388H960Q944 388 944 404V668Q944 684 928 684H776Q760 684 760 668V456" class="line-dashed"/>
+
+  <text x="296" y="292" text-anchor="middle" class="mono label">MCP</text>
+  <text x="612" y="292" text-anchor="middle" class="mono label">stock_*</text>
+  <text x="612" y="472" text-anchor="middle" class="mono label">Python API</text>
+  <text x="952" y="286" text-anchor="end" class="sans label">observations</text>
+  <text x="948" y="344" text-anchor="end" class="sans label">files</text>
+  <text x="952" y="538" text-anchor="end" class="sans label">jobs</text>
+  <text x="1208" y="538" text-anchor="middle" class="sans label">local bridge</text>
+  <text x="1448" y="538" text-anchor="middle" class="sans label">guarded UI</text>
+  <rect x="788" y="675" width="126" height="18" fill="#f8fafc"/>
+  <text x="851" y="688" text-anchor="middle" class="sans label">compact receipts</text>
+
+  <rect x="64" y="256" width="184" height="100" rx="8" class="node-soft"/>
+  <text x="156" y="298" text-anchor="middle" class="sans node-title">Agent / MCP client</text>
+  <text x="156" y="324" text-anchor="middle" class="sans node-sub">Claude · Codex · Cursor · others</text>
+
+  <rect x="352" y="256" width="216" height="100" rx="8" class="node"/>
+  <text x="460" y="298" text-anchor="middle" class="sans node-title">MCP server</text>
+  <text x="460" y="324" text-anchor="middle" class="mono node-sub">stock_* tools</text>
+
+  <rect x="352" y="436" width="216" height="100" rx="8" class="node"/>
+  <text x="460" y="478" text-anchor="middle" class="sans node-title">Local CLI</text>
+  <text x="460" y="504" text-anchor="middle" class="mono node-sub">python3 stock.py</text>
+
+  <rect x="656" y="284" width="240" height="172" rx="8" class="node-focus"/>
+  <text x="776" y="339" text-anchor="middle" class="sans node-title" fill="#1d4ed8">Shared application core</text>
+  <text x="776" y="368" text-anchor="middle" class="sans node-sub">validation · metrics · orchestration</text>
+  <line x1="688" y1="392" x2="864" y2="392" stroke="#bfdbfe" stroke-width="1"/>
+  <text x="776" y="421" text-anchor="middle" class="sans node-sub">same behavior through MCP and CLI</text>
+
+  <rect x="1000" y="184" width="184" height="96" rx="8" class="node-soft"/>
+  <text x="1092" y="224" text-anchor="middle" class="sans node-title">Evidence store</text>
+  <text x="1092" y="250" text-anchor="middle" class="sans node-sub">SQLite · IDs · observations</text>
+
+  <rect x="1000" y="340" width="184" height="96" rx="8" class="node-soft"/>
+  <text x="1092" y="380" text-anchor="middle" class="sans node-title">Workspace</text>
+  <text x="1092" y="406" text-anchor="middle" class="sans node-sub">state · runs · CSV · plans</text>
+
+  <rect x="1000" y="504" width="184" height="96" rx="8" class="node"/>
+  <text x="1092" y="544" text-anchor="middle" class="sans node-title">Durable job queue</text>
+  <text x="1092" y="570" text-anchor="middle" class="sans node-sub">idempotency · sticky STOP</text>
+
+  <rect x="1232" y="504" width="192" height="96" rx="8" class="node"/>
+  <text x="1328" y="544" text-anchor="middle" class="sans node-title">Chrome extension</text>
+  <text x="1328" y="570" text-anchor="middle" class="sans node-sub">page reads · guarded actions</text>
+
+  <rect x="1472" y="504" width="96" height="96" rx="8" class="node-soft"/>
+  <text x="1520" y="539" text-anchor="middle" class="sans node-title">Adobe</text>
+  <text x="1520" y="562" text-anchor="middle" class="sans node-sub">Stock</text>
+  <text x="1520" y="583" text-anchor="middle" class="sans node-sub">portal</text>
+
+  <line x1="64" y1="808" x2="1536" y2="808" stroke="#e4e7ec" stroke-width="1"/>
+  <circle cx="72" cy="844" r="4" fill="#2563eb"/>
+  <text x="88" y="849" class="sans node-sub">No gateway or image generator is required. Optional host routing and generator adapters sit outside this repository boundary.</text>
+</svg>

@@ -9,6 +9,12 @@
 An end-to-end toolkit for working on **Adobe Stock** as a contributor **with an AI agent**: measure the market, plan sets, check and
 package your images, stage a verified upload for your final click, and read the outcomes. It has four parts that install together:
 
+![Illustrated journey of an Agentic Stock Contributor batch](docs/architecture/workflow-illustrated.png)
+
+*Conceptual walkthrough. The labeled diagrams below define the exact stages and boundaries; the contributor remains the only person who clicks Submit.*
+
+![Agentic Stock Contributor system overview](docs/architecture/system-overview.png)
+
 | Part | What it gives the agent |
 |---|---|
 | **Skill + playbook** (`skills/adobe-stock/`) | The operating rules and the 10-stage workflow, loaded by any agent that supports skills |
@@ -26,7 +32,7 @@ Plus local commands (stdlib only) for the steps between "images exist" and "read
 the setup guide covers ChatGPT Free, no GPT Bridge, Colab Free and fully local fallbacks.
 
 **Start:** [docs/SETUP.md](docs/SETUP.md) (about 10 minutes) · **Safety, limits, terms:** [docs/SAFETY.md](docs/SAFETY.md) ·
-**Workflow:** [knowledge/production-workflow.md](knowledge/production-workflow.md) · **Agents:** [AGENTS.md](AGENTS.md) ·
+**Workflow:** [knowledge/production-workflow.md](knowledge/production-workflow.md) · **Architecture:** [docs/architecture/](docs/architecture/) · **Agents:** [AGENTS.md](AGENTS.md) ·
 **Templates:** [examples/](examples/). Unofficial; not affiliated with Adobe. MIT licensed.
 
 ## Details
@@ -61,6 +67,8 @@ Public Adobe Stock pages show: result count, AI flag (`is_gentech`), creator, ca
 `supply_rating` is about **supply only**. Demand comes from Trends and your own sales.
 
 ## Upload staging, know-how and skill
+
+![Ten-stage Adobe Stock workflow](docs/architecture/production-workflow.png)
 
 - `stock_upload_metadata(plan_path)` / CLI `upload-metadata`: applies the plan's CSV through the portal's own Upload CSV dialog, then sets generative AI, people/property and include-in-submission for all staged files and saves; never clicks Submit. Needs `upload_metadata.enabled` (user's switch) and refuses when the New list does not hold exactly the plan's files. Verified by reading All (N), Submit N, per-tile keywords and the two checkboxes back.
 - `stock_upload_stage(plan_path, only?)` / CLI `upload-stage`: plan = the JSON written by `prepare-plan` (`ready_for_upload: true`, no failures, fresh). Every file is re-hashed; the extension fetches each file from the bridge (`/v1/file`, dispatched job only), re-checks sha256, drops them on the Uploads page's own drop zone, and reads the portal's "File types: All (N)" count back. Success = the count rose by exactly the number staged. A failed or partial stage stops the queue (never retried blindly). Protected folders can never be staged. `upload_stage.enabled` in `config/stock_analytics.json` is the user's switch, read on every use. Details: `knowledge/upload-and-portal.md`.
@@ -105,4 +113,4 @@ cd tests && PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -p 'test_*.py
 
 ## Docs
 
-`docs/` has the setup and safety guides. `CHANGELOG.md` tracks extension changes.
+`docs/` has the setup, safety and [toolkit architecture](docs/architecture/) guides. `CHANGELOG.md` tracks extension changes.
