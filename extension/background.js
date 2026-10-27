@@ -115,6 +115,7 @@ async function stageFiles(tabId, job) {
   if (out.before.submission_limit) { out.error = "submission_limit"; return out; }
   if (out.before.submission_blocked) { out.error = "submission_blocked"; return out; }
   if (out.before.all_count === null || out.before.uploading) return out;
+  if (job.require_empty && out.before.all_count !== 0) { out.error = "new_not_empty"; return out; }
   let batch = [];
   let size = 0;
   const flush = async () => {

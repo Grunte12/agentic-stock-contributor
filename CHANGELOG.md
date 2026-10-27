@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- `stock_upload_stage(with_metadata=true)` / `upload-ready` validates both operations before staging a complete wave into empty New, then applies its CSV and flags. Partial staging stops before metadata. Subset recovery uses separate staging; metadata retains the full-plan count guard.
+- Extension 0.10.4 refuses combined staging before file transfer when New already contains files, preventing the wave's flags from being applied to unrelated earlier files.
 - MCP results now have a deterministic 1,800-character context boundary. Long reports, observations, outcomes, knowledge topics and errors are saved as content-addressed evidence artifacts; the lead receives only operational facts, provenance and the artifact path for fresh-context review. Direct Python and CLI results remain unchanged.
 - `stock_wait` now returns a small inline receipt without writing an artifact and explains whether unfinished work is paced, at the daily cap, disconnected, dispatched or stopped. Schemas expose batch, keyword and timeout limits, and `stock_resume` explicitly requires a current user instruction as well as the local switch.
 - Extension 0.10.3 also stops on Adobe's generic partial-submission banner before fetching image bytes, while keeping it distinct from a confirmed submission-limit message.
@@ -56,6 +58,7 @@
 
 Bump `extension/manifest.json` version on every change under `extension/`. `stock_status` shows the version the running extension reports (`extension_version`).
 
+- 0.10.4: combined stage-and-metadata jobs require an empty New list before fetching image bytes. No new permissions.
 - 0.10.3: staging also stops on “Not all of your contents could be submitted for moderation,” but reports `submission_blocked` rather than claiming the weekly limit caused it. No new permissions.
 - 0.10.2: staging checks Adobe's visible submission-limit banner before fetching any image bytes and stops immediately. No new permissions.
 - 0.10.1: the after-load URL check also accepts `?isa0=<digits>` and no other query, because the portal sometimes redirects `/en/uploads` to `/en/uploads?isa0=1` (seen 2026-10-16; staging stopped as `restricted`). No new permissions.

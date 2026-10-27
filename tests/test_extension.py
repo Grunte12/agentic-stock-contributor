@@ -79,6 +79,12 @@ class StaticScan(unittest.TestCase):
         self.assertLess(bg.index("sha256Hex(buf)) !== f.sha256"), bg.index("batch.push("))
         self.assertIn("/v1/file?job=", bg)
 
+    def test_combined_stage_checks_empty_new_before_fetching_files(self):
+        bg = (EXT / "background.js").read_text()
+        guard = bg.index('if (job.require_empty && out.before.all_count !== 0)')
+        self.assertLess(guard, bg.index('const r = await fetch', guard))
+        self.assertIn('out.error = "new_not_empty"', bg[guard:guard + 150])
+
     def test_bridge_port_matches_config(self):
         cfg = json.loads((ROOT / "config" / "stock_analytics.json").read_text())
         self.assertIn(f"127.0.0.1:{cfg['bridge']['port']}", (EXT / "background.js").read_text())

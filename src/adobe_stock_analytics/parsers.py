@@ -158,6 +158,8 @@ def parse_upload_stage(payload, expected_names):
     if _blocked(payload):
         return _result("blocked", _blocked(payload))
     err = payload.get("error")
+    if err == "new_not_empty":
+        return _result("blocked", "new_not_empty")
     if err == "submission_limit":
         return _result("blocked", "submission_limit")
     if err == "submission_blocked":

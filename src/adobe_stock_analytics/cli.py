@@ -36,8 +36,11 @@ def main(argv=None):
     us = sub.add_parser("upload-stage", help="stage a prepared plan's files on the Uploads page (New list); never submits")
     us.add_argument("plan")
     us.add_argument("--only", action="append", default=None, metavar="FILE", help="stage only this file name (repeatable)")
+    us.add_argument("--with-metadata", action="store_true", help="immediately apply the plan CSV and flags after a verified stage")
     um = sub.add_parser("upload-metadata", help="apply the plan's CSV and the AI/people/include flags to the staged files; never submits")
     um.add_argument("plan")
+    ur = sub.add_parser("upload-ready", help="preflight and stage one complete wave into empty New, then apply metadata; never submits")
+    ur.add_argument("plan")
     sub.add_parser("reload-extension", help="ask the running extension to reload itself (after its files changed on disk)")
     sub.add_parser("reset-staged", help="forget which files were staged (user only; after clearing the portal New list)")
     sk = sub.add_parser("install-skill", help="copy the adobe-stock skill and its know-how docs into an agent skills folder (dry run without --confirm-write)")
@@ -215,9 +218,11 @@ def main(argv=None):
     elif a.cmd == "outcome-report":
         out = app.stock_outcome_report(a.groups, a.tags, a.submitted, a.ledger, a.min_n, a.qc)
     elif a.cmd == "upload-stage":
-        out = app.stock_upload_stage(a.plan, a.only)
+        out = app.stock_upload_stage(a.plan, a.only, a.with_metadata)
     elif a.cmd == "upload-metadata":
         out = app.stock_upload_metadata(a.plan)
+    elif a.cmd == "upload-ready":
+        out = app.stock_upload_ready(a.plan)
     elif a.cmd == "reload-extension":
         app.store.set_state("reload_extension", True)
         out = {"reload_requested": True, "note": "the extension reloads on its next poll (within about 30 s); needs extension 0.8.3 or newer to be loaded once"}

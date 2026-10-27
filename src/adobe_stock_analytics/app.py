@@ -218,14 +218,22 @@ class App:
             raise ValueError(f"unknown topic {topic!r}; one of {sorted(docs)}")
         return {"topic": topic, "markdown": split(docs[topic])[1]}
 
-    def stock_upload_stage(self, plan_path, only=None):
+    def stock_upload_stage(self, plan_path, only=None, with_metadata=False):
         """Stage the files of a prepared, ready_for_upload plan on the Uploads page (portal New list). Never submits."""
+        if with_metadata:
+            if only is not None:
+                raise ValueError("combined staging requires the complete wave; recover subsets with separate staging")
+            return self.stock_upload_ready(plan_path)
+        return self._upload_stage(plan_path, only)
+
+    def _upload_stage(self, plan_path, only=None, require_empty=False):
         plan = upload_stage.load_plan(plan_path, self.cfg, only)
         staged = self.store.get_state("staged", {})
         dup = sorted(f["name"] for f in plan["files"] if f["sha256"] in staged)
         if dup:
             raise ValueError(f"already staged: {dup}. Stage only the rest with only=[...]; if the user cleared the New list, they run `reset-staged`")
-        jid = self.queue.enqueue("upload_stage", {"package_digest": plan["package_digest"], "files": plan["files"]})
+        jid = self.queue.enqueue("upload_stage", {"package_digest": plan["package_digest"], "files": plan["files"],
+                                                  "require_empty": require_empty})
         end = time.time() + 110
         while time.time() < end:
             j = self.queue.job(jid)
@@ -247,6 +255,29 @@ class App:
                 break
             time.sleep(1)
         return self.stock_upload_result(jid)
+
+    def stock_upload_ready(self, plan_path):
+        """Preflight both operations; stage a complete wave into empty New, then set metadata. Never submits."""
+        plan = upload_metadata.load_metadata_plan(plan_path, self.cfg)
+        staged = self._upload_stage(plan_path, require_empty=True)
+        if staged.get("status") != "ok" or staged.get("stop"):
+            return {**staged, "phase": "stage"}
+        if staged.get("before") != 0 or staged.get("after") != len(plan["names"]):
+            self.queue.stop("upload_stage:unexpected_new_contents")
+            return {**staged, "phase": "stage", "status": "unknown", "reason": "unexpected_new_contents",
+                    "stop": self.queue.stop_state()}
+        metadata = self.stock_upload_metadata(plan_path)
+        if metadata.get("status") != "ok" or metadata.get("stop"):
+            return {**metadata, "phase": "metadata", "stage_job_id": staged.get("job_id")}
+        return {"phase": "complete", "status": "ok", "stop": None,
+                "stage_job_id": staged.get("job_id"), "metadata_job_id": metadata.get("job_id"),
+                "expected": staged.get("expected"), "added": staged.get("added"),
+                "before": staged.get("before"), "after": metadata.get("all_count"),
+                "submit_count": metadata.get("submit_count"),
+                "tiles_with_keywords": metadata.get("tiles_with_keywords"),
+                "ai_checked": metadata.get("ai_checked"), "include_checked": metadata.get("include_checked"),
+                "fictional_checked": metadata.get("fictional_checked"),
+                "next": "metadata and flags are verified; files remain in New and the user clicks Submit"}
 
     def stock_upload_result(self, job_id):
         """Compact result of a stage job: how many files the portal's All (N) count rose by, and what is missing."""

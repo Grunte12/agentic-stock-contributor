@@ -6,6 +6,7 @@ import tempfile
 import unittest
 from datetime import timedelta
 from pathlib import Path
+from unittest import mock
 
 from helpers import CFG, new_store
 from test_upload_stage import NOW, make_package
@@ -51,6 +52,11 @@ class LoaderTests(unittest.TestCase):
         self.assertEqual((r["rows"], r["names"]), (2, ["a.jpg", "b.jpg"]))
         self.assertEqual(r["flags"], {"generative_ai": True, "people_property": "no", "include_in_submission": True, "people_property_fictional": True})
         self.assertEqual(r["csv"]["sha256"], hashlib.sha256(p.read_bytes()).hexdigest())
+
+    def test_portal_count_override_is_not_supported(self):
+        pp, _, _ = package(self.tmp)
+        with self.assertRaises(TypeError):
+            M.load_metadata_plan(pp, ON, now=NOW, portal_count=30)
 
     def test_bad_csv_rows_refused(self):
         cases = {
@@ -159,6 +165,57 @@ class QueueTests(unittest.TestCase):
         q.cfg = CFG
         self.assertEqual(q.next_job(), (None, "upload_metadata_off"))
         self.assertEqual(q.job(jid)["state"], "failed")
+
+
+class ReadyToolTests(unittest.TestCase):
+    def setUp(self):
+        from adobe_stock_analytics.app import App
+        self.app = App(data_dir=tempfile.mkdtemp(), cfg=ON)
+        self.plan = {"names": ["a.jpg", "b.jpg"]}
+
+    def test_preflight_then_empty_stage_then_metadata(self):
+        staged = {"status": "ok", "stop": None, "job_id": "stage", "expected": 2, "added": 2, "before": 0, "after": 2}
+        metadata = {"status": "ok", "stop": None, "job_id": "meta", "all_count": 2, "submit_count": 2}
+        calls = mock.Mock()
+        with mock.patch("adobe_stock_analytics.app.upload_metadata.load_metadata_plan", return_value=self.plan) as preflight, \
+             mock.patch.object(self.app, "_upload_stage", return_value=staged) as stage, \
+             mock.patch.object(self.app, "stock_upload_metadata", return_value=metadata) as meta:
+            calls.attach_mock(preflight, "preflight"); calls.attach_mock(stage, "stage"); calls.attach_mock(meta, "metadata")
+            out = self.app.stock_upload_ready("plan.json")
+        self.assertEqual([c[0] for c in calls.mock_calls], ["preflight", "stage", "metadata"])
+        stage.assert_called_once_with("plan.json", require_empty=True)
+        meta.assert_called_once_with("plan.json")
+        self.assertEqual((out["status"], out["phase"], out["after"]), ("ok", "complete", 2))
+
+    def test_disabled_metadata_or_invalid_csv_never_stages(self):
+        for error in (PermissionError("metadata disabled"), M.StageError("CSV changed")):
+            with mock.patch("adobe_stock_analytics.app.upload_metadata.load_metadata_plan", side_effect=error), \
+                 mock.patch.object(self.app, "_upload_stage") as stage:
+                with self.assertRaises(type(error)):
+                    self.app.stock_upload_ready("plan.json")
+            stage.assert_not_called()
+
+    def test_incomplete_stage_or_unexpected_existing_files_never_runs_metadata(self):
+        for staged in ({"status": "unknown", "stop": {"reason": "stage_incomplete"}},
+                       {"status": "ok", "stop": None, "before": 1, "after": 3}):
+            with mock.patch("adobe_stock_analytics.app.upload_metadata.load_metadata_plan", return_value=self.plan), \
+                 mock.patch.object(self.app, "_upload_stage", return_value=staged), \
+                 mock.patch.object(self.app, "stock_upload_metadata") as meta:
+                out = self.app.stock_upload_ready("plan.json")
+            meta.assert_not_called()
+            self.assertEqual(out["phase"], "stage")
+            self.assertTrue(out["stop"])
+
+    def test_combined_subset_is_refused_before_staging(self):
+        with mock.patch.object(self.app, "_upload_stage") as stage:
+            with self.assertRaisesRegex(ValueError, "complete wave"):
+                self.app.stock_upload_stage("plan.json", only=["a.jpg"], with_metadata=True)
+        stage.assert_not_called()
+
+    def test_mcp_stage_has_combined_metadata_option_without_count_override(self):
+        from adobe_stock_analytics import mcp_server
+        self.assertIn("with_metadata", mcp_server.TOOLS["stock_upload_stage"][1]["properties"])
+        self.assertNotIn("portal_count", mcp_server.TOOLS["stock_upload_metadata"][1]["properties"])
 
 
 if __name__ == "__main__":

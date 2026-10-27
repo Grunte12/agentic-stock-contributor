@@ -211,14 +211,15 @@ The agent never uploads (playbook hard rule 1). The staging tools exist for
 the user's own workflow; run them only when the user asked for it in chat for
 this run and turned the switch on.
 
-- `stock_upload_stage(plan_path, only=[...])` puts the plan's files in the
+- `stock_upload_stage(plan_path, with_metadata=true)` puts the plan's files in the
   portal New list. Needs `upload_stage.enabled` true, a plan with
   `ready_for_upload: true`, at most 20 files and 200 MB, younger than 48 hours,
   no protected folder. Success: `status` `ok` and the All (N) count rose by
-  exactly the number staged.
+  exactly the number staged. With `with_metadata=true`, it preflights metadata, requires empty New,
+  then applies the CSV and flags for the complete wave; incomplete staging stops first. Subset recovery uses separate staging.
 - `stock_upload_metadata(plan_path)` applies the plan's CSV and the AI,
   people/property and include flags. Needs `upload_metadata.enabled` true and
-  the New list holding exactly the plan's files.
+  requires New to hold exactly the plan file count; there is no count override for earlier files.
 - A failed or partial stage stops the queue (sticky). Do not retry. The user
   looks at the New list by hand, then runs `resume`. A file already staged (by
   sha256) is refused; stage the rest with `only`.

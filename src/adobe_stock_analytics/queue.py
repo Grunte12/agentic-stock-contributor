@@ -122,6 +122,7 @@ class Queue:
                 files = json.loads(r["params"])["files"]
                 job["files"] = [{"index": i, "name": f["name"], "size": f["size"], "sha256": f["sha256"]} for i, f in enumerate(files)]
                 job["stage_timeout_seconds"] = upload_stage_cfg(self.cfg)["stage_timeout_seconds"]
+                job["require_empty"] = json.loads(r["params"]).get("require_empty") is True
             if r["kind"] == "upload_metadata":
                 prm = json.loads(r["params"])
                 job["files"] = [{"index": 0, "name": prm["files"][0]["name"], "size": prm["files"][0]["size"], "sha256": prm["files"][0]["sha256"]}]

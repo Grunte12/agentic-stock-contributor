@@ -65,8 +65,8 @@ one step at a time, and ask choices with your host's question tool. Do the work 
 | Accept / reject rates per sub-niche and content pattern; what to make next | `stock_outcome_report`, knowledge topic `outcomes` |
 | Transform technical-pass raws (when chosen) | `stock.py upscale` (CLI) or the user's chosen resize/upscaler; knowledge topic `qc-upscale` |
 | Look-alike screen against earlier uploads | `stock.py similar` (CLI, Pillow), knowledge topic `qc-upscale` |
-| Stage a verified plan on the Uploads page | `stock_upload_stage`, `stock_upload_result` |
-| Apply CSV metadata and flags to the staged files | `stock_upload_metadata`, `stock_upload_result` |
+| Stage and metadata a complete wave into empty New (both switches required) | `stock_upload_stage` with `with_metadata=true` |
+| Recover or inspect separate portal steps | `stock_upload_stage`, `stock_upload_metadata`, `stock_upload_result` |
 | Visual summary for the user | `stock_dashboard` |
 | Stop now | `stock_stop` |
 

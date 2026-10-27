@@ -163,6 +163,17 @@ class StageQueueTests(unittest.TestCase):
         q.next_job()
         self.assertEqual(q.complete(jid, {"kind": "upload_stage", "page_state": "signin"})["status"], "blocked")
 
+    def test_combined_stage_requires_empty_new_on_dispatch(self):
+        q, jid, _ = staged_queue(tempfile.mkdtemp())
+        params = json.loads(q.job(jid)["params"])
+        params["require_empty"] = True
+        q.store.db.execute("UPDATE job SET params=? WHERE job_id=?", (json.dumps(params), jid))
+        dispatched, _ = q.next_job()
+        self.assertTrue(dispatched["require_empty"])
+        res = q.complete(jid, {"kind": "upload_stage", "error": "new_not_empty"})
+        self.assertEqual((res["status"], res["reason"]), ("blocked", "new_not_empty"))
+        self.assertTrue(q.stop_state())
+
     def test_submission_limit_blocks_before_transfer(self):
         for error in ("submission_limit", "submission_blocked"):
             q, jid, _ = staged_queue(tempfile.mkdtemp())
