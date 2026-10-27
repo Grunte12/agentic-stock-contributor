@@ -64,7 +64,7 @@ Public Adobe Stock pages show: result count, AI flag (`is_gentech`), creator, ca
 
 - `stock_upload_metadata(plan_path)` / CLI `upload-metadata`: applies the plan's CSV through the portal's own Upload CSV dialog, then sets generative AI, people/property and include-in-submission for all staged files and saves; never clicks Submit. Needs `upload_metadata.enabled` (user's switch) and refuses when the New list does not hold exactly the plan's files. Verified by reading All (N), Submit N, per-tile keywords and the two checkboxes back.
 - `stock_upload_stage(plan_path, only?)` / CLI `upload-stage`: plan = the JSON written by `prepare-plan` (`ready_for_upload: true`, no failures, fresh). Every file is re-hashed; the extension fetches each file from the bridge (`/v1/file`, dispatched job only), re-checks sha256, drops them on the Uploads page's own drop zone, and reads the portal's "File types: All (N)" count back. Success = the count rose by exactly the number staged. A failed or partial stage stops the queue (never retried blindly). Protected folders can never be staged. `upload_stage.enabled` in `config/stock_analytics.json` is the user's switch, read on every use. Details: `knowledge/upload-and-portal.md`.
-- `stock_knowledge(topic)`: the know-how (mindset, niche method, workflow, QC, metadata, upload, community evidence) as markdown, served by the MCP itself; `index` lists topics. The MCP `initialize` reply carries the core rules as `instructions`.
+- `stock_knowledge(topic)`: `index` returns short topic names; a full topic is saved as an evidence artifact for a fresh-context worker. Large MCP results follow the same rule so the lead receives only status, counts, provenance and the next action. The MCP `initialize` reply carries the core rules as `instructions`.
 - `skills/adobe-stock/SKILL.md` + `knowledge/`: `python3 stock.py install-skill --confirm-write` copies them to `~/.claude/skills/adobe-stock/` (dry run without the flag).
 - Live-verified locally: staging and metadata have completed with count, keyword and flag verification while Submit remained untouched.
   Adobe can change its portal at any time, so first use on another account should still be a one-file canary.
@@ -72,7 +72,7 @@ Public Adobe Stock pages show: result count, AI flag (`is_gentech`), creator, ca
 ## Rules
 
 1. Every number has provenance (`obs_id` or `metric_id`). Missing = `null` + reason, never 0.
-2. Tables are rendered by `stock_report`; `stock_verify_doc` fails a doc with edited tables or numbers that are not cited as `[m:<metric_id>]`.
+2. Tables are rendered by `stock_report` into an evidence artifact; a fresh-context worker copies them unchanged. `stock_verify_doc` fails a doc with edited tables or numbers that are not cited as `[m:<metric_id>]`.
 3. No MCP tool accepts a URL, a number, a pacing value or a threshold. Pacing (25 s + jitter, 150 pages/day) and thresholds live in `config/stock_analytics.json`.
 4. The queue stops on CAPTCHA, restriction, sign-in wall, HTTP 403/429, unknown page shape, or repeated filter failures. It never retries or bypasses. Only the user resumes: `python3 stock.py resume`.
 

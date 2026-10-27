@@ -1,9 +1,11 @@
 import io
+import hashlib
 import json
 import tempfile
 import threading
 import unittest
 import urllib.request
+from pathlib import Path
 from unittest import mock
 
 from helpers import CFG, fixture, new_store
@@ -218,16 +220,139 @@ class McpContractTests(unittest.TestCase):
         for fx, ai, order in (("search_matcha_p0_1.json", "all", "relevance"), ("search_matcha_p0_2.json", "all", "downloads"),
                               ("search_matcha_p0_3.json", "only_ai", "relevance")):
             obs, _ = ingest_search(st, fx, "matcha latte", ai, order)
-        out = self.call("stock_metrics", keywords=["matcha latte"])
+        out = self.app.stock_metrics(keywords=["matcha latte"])
         for m in out["metrics"]:
             self.assertRegex(m["metric_id"], r"^[0-9a-f]{16}$")
             self.assertTrue(m["inputs"] or m["value"] is None or m["name"] == "lead_window")
-        o = self.call("stock_observation", obs_id=obs)
+        o = self.app.stock_observation(obs_id=obs)
         self.assertEqual(o["search_count"]["obs_id"], obs)
         self.assertTrue(all(r["obs_id"] == obs for r in o["rows"]))
-        rep = self.call("stock_report", keywords=["matcha latte"])
+        rep = self.app.stock_report(keywords=["matcha latte"])
         self.assertIn("91,325", rep["markdown"])
         self.assertEqual(len(rep["render_sha256"]), 64)
+
+    def test_analysis_tools_spill_full_results_before_mcp(self):
+        from helpers import ingest_search
+        obs, _ = ingest_search(self.app.store, "search_matcha_p0_1.json", "matcha latte", "all", "relevance")
+
+        observation = self.call("stock_observation", obs_id=obs)
+        self.assertNotIn("rows", observation)
+        self.assertGreater(observation["rows_count"], 0)
+        self.assertTrue(Path(observation["artifact_path"]).is_file())
+        self.assertLessEqual(len(json.dumps(observation, ensure_ascii=False)), mcp_server.MAX_MCP_RESULT_CHARS)
+
+        report = self.call("stock_report", keywords=["matcha latte"])
+        self.assertNotIn("markdown", report)
+        self.assertGreater(report["markdown_chars"], 0)
+        self.assertGreater(report["metric_count"], 0)
+        artifact = Path(report["artifact_path"])
+        self.assertTrue(artifact.is_file())
+        self.assertEqual(hashlib.sha256(artifact.read_bytes()).hexdigest(), report["artifact_sha256"])
+        self.assertEqual(artifact.stat().st_size, report["artifact_bytes"])
+        self.assertIn("91,325", json.loads(artifact.read_text())["markdown"])
+        self.assertLessEqual(len(json.dumps(report, ensure_ascii=False)), mcp_server.MAX_MCP_RESULT_CHARS)
+
+    def test_large_operational_result_keeps_only_decision_fields(self):
+        jobs = [{"job_id": f"job-{i:02d}", "kind": "search", "state": "done", "obs_id": f"obs-{i:02d}"}
+                for i in range(30)]
+        result = mcp_server._compact_result(self.app, "stock_wait", {"jobs": jobs, "stop": None})
+        self.assertNotIn("jobs", result)
+        self.assertEqual(result["state"], "completed")
+        self.assertEqual(result["job_state_counts"], {"done": 30})
+        self.assertNotIn("obs_ids", result)
+        self.assertNotIn("artifact_path", result)
+        self.assertLessEqual(len(json.dumps(result, ensure_ascii=False)), mcp_server.MAX_MCP_RESULT_CHARS)
+
+    def test_wait_keeps_pending_and_failed_job_ids(self):
+        jobs = [
+            {"job_id": "job-pending", "kind": "search", "state": "queued", "obs_id": None},
+            {"job_id": "job-failed", "kind": "search", "state": "failed", "obs_id": None},
+        ]
+        result = mcp_server._compact_result(self.app, "stock_wait", {"jobs": jobs, "stop": None})
+        self.assertEqual(result["state"], "pending")
+        self.assertEqual(result["unfinished_job_ids"], ["job-pending"])
+        self.assertEqual(result["failed_job_ids"], ["job-failed"])
+
+    def test_completed_asset_wait_preserves_observation_for_retrieval(self):
+        parsed = {"status": "ok", "parser_version": "test", "asset_id": 123,
+                  "title": "Sensor", "keywords": ["sensor", "maintenance"], "keywords_shown": 2, "keywords_total": 2}
+        obs = self.app.store.add_observation("asset", "https://stock.adobe.com/123", {"asset_id": 123}, {}, parsed)
+        job = self.app.stock_asset([123])["job_ids"][0]
+        self.app.store.db.execute("UPDATE job SET state='done', obs_id=? WHERE job_id=?", (obs, job))
+        waited = self.call("stock_wait", job_ids=[job], timeout_seconds=1)
+        observation = self.call("stock_observation", obs_id=waited["observations"][job])
+        self.assertEqual(observation["asset"]["keywords"], ["sensor", "maintenance"])
+
+    def test_every_receipt_path_caps_nested_stop_and_retains_full_evidence(self):
+        for name in ("stock_status", "stock_wait"):
+            for reason in ("x" * 3000, "\\" * 3000):
+                value = {"stop": {"reason": reason, "details": {"large": "y" * 3000}}}
+                if name == "stock_wait":
+                    value["jobs"] = [{"job_id": "job-1", "state": "queued", "obs_id": None}]
+                receipt = mcp_server._compact_result(self.app, name, value)
+                self.assertLessEqual(len(json.dumps(receipt, ensure_ascii=False)), mcp_server.MAX_MCP_RESULT_CHARS)
+                self.assertTrue(receipt["stop"])
+                full = json.loads(Path(receipt["artifact_path"]).read_text())
+                self.assertEqual(full, value)
+
+    def test_wait_explains_disconnected_queue_without_requeueing(self):
+        job_id = self.app.stock_scan([REQ])["job_ids"][0]
+        with mock.patch("adobe_stock_analytics.app.time.time", side_effect=[0, 1]):
+            result = self.call("stock_wait", job_ids=[job_id], timeout_seconds=1)
+        self.assertEqual(result["state"], "pending")
+        self.assertEqual(result["queue_reason"], "extension_disconnected")
+        self.assertEqual(result["unfinished_job_ids"], [job_id])
+        self.assertIn("do not scan again", result["next"])
+        self.assertNotIn("artifact_path", result)
+
+    def test_tool_schemas_expose_runtime_limits_to_weak_models(self):
+        scan = mcp_server.TOOLS["stock_scan"][1]["properties"]["requests"]
+        self.assertEqual((scan["minItems"], scan["maxItems"]), (1, 20))
+        self.assertEqual(scan["items"]["properties"]["keyword"]["maxLength"], 100)
+        wait = mcp_server.TOOLS["stock_wait"][1]["properties"]
+        self.assertEqual((wait["job_ids"]["minItems"], wait["job_ids"]["maxItems"]), (1, 20))
+        self.assertEqual((wait["timeout_seconds"]["minimum"], wait["timeout_seconds"]["maximum"]), (1, 120))
+        self.assertIn("explicitly instructs", mcp_server.TOOLS["stock_resume"][0])
+
+    def test_knowledge_index_is_inline_but_topic_is_artifact(self):
+        index = self.call("stock_knowledge", topic="index")
+        self.assertIn("mindset", index["topics"])
+        self.assertNotIn("artifact_path", index)
+        topic = self.call("stock_knowledge", topic="mindset")
+        self.assertNotIn("markdown", topic)
+        self.assertEqual(topic["topic"], "mindset")
+        self.assertTrue(Path(topic["artifact_path"]).is_file())
+        self.assertLessEqual(len(json.dumps(topic, ensure_ascii=False)), mcp_server.MAX_MCP_RESULT_CHARS)
+
+    def test_long_tool_error_is_spilled(self):
+        with mock.patch.object(self.app, "stock_status", side_effect=ValueError("x" * 3000)):
+            result = self.rpc("tools/call", {"name": "stock_status", "arguments": {}})
+        self.assertTrue(result["isError"])
+        body = json.loads(result["content"][0]["text"])
+        self.assertEqual(body["status"], "error")
+        self.assertTrue(Path(body["artifact_path"]).is_file())
+        self.assertLessEqual(len(result["content"][0]["text"]), mcp_server.MAX_MCP_RESULT_CHARS)
+
+    def test_outcome_receipt_keeps_coverage_and_provenance(self):
+        result = mcp_server._compact_result(self.app, "stock_outcomes", {
+            "rows": [{"asset_id": i, "outcome_class": "quality"} for i in range(100)],
+            "counts": {"quality": 100},
+            "accepted": [{"asset_id": i} for i in range(200)],
+            "accepted_asset_ids": list(range(200)),
+            "accepted_ids_read": 200,
+            "accepted_total": 250,
+            "accepted_obs_id": "obs-accepted",
+            "read_at": "2026-10-23T00:00:00Z",
+            "obs_id": "obs-outcomes",
+        })
+        self.assertEqual(result["counts"], {"quality": 100})
+        self.assertEqual(result["accepted_ids_read"], 200)
+        self.assertEqual(result["accepted_total"], 250)
+        self.assertEqual(result["accepted_obs_id"], "obs-accepted")
+        self.assertEqual(result["obs_id"], "obs-outcomes")
+        self.assertNotIn("rows", result)
+        self.assertNotIn("accepted", result)
+        self.assertLessEqual(len(json.dumps(result, ensure_ascii=False)), mcp_server.MAX_MCP_RESULT_CHARS)
 
     def test_scan_and_resume_policy(self):
         r = self.call("stock_scan", requests=[{"keyword": "matcha latte"}])

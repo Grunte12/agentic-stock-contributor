@@ -42,16 +42,18 @@ Keep the sentence "technical pass is not visual approval, visual approval is not
 | Work | Who | Why |
 |---|---|---|
 | Counting, hashing, gating, pacing, parsing, staging, verifying files | code (tool) | exact, repeatable, ~0 tokens |
-| Rendering tables with cited numbers | code (`stock_report`) | the agent pastes it unchanged |
+| Rendering tables with cited numbers | code (`stock_report`) | a fresh-context worker copies the artifact unchanged |
 | Choosing niches and keywords, reading evidence, deciding, explaining | the lead agent (strong model) | judgment |
 | Collecting posts, reading threads, one look per image | the cheapest capable worker the host has (small model, sub-agents, or a fresh pass) | volume, not intelligence |
 | Confirming a reported fail, final decisions | the lead | judgment |
 
 Rules that follow:
-- One tool call per job. Batch scans (up to 20 requests per `stock_scan`). Read the rendered report, never raw observations or page dumps.
+- One tool call per job. Batch scans (up to 20 requests per `stock_scan`). The lead reads compact receipts; full reports,
+  observations, logs, page dumps and visual evidence stay in files and go to a fresh-context worker only when they can change a decision.
 - Do not do by reasoning what a tool can do by code. Do not let code decide taste.
 - Workers get one job, the exact route, a limit, and a fixed compact output (JSON rows). The lead reads only those rows.
-  No sub-agents: do the jobs yourself in batches, rows first, and say a QC run was `single-pass`.
+  No sub-agents: use a user-approved fresh-context reviewer or human for bulky evidence; otherwise mark that analysis `BLOCKED`.
+  Ordinary compact tool receipts remain usable without delegation.
 - Use whatever the host has (image provider, vision reviewer, search route); a missing one is `unmeasured` or `BLOCKED`, never faked.
 
 ## 6. Stop, do not push through [REPO]

@@ -16,8 +16,9 @@ changed.
    web search snippet, or from an earlier run you remember. Missing = write
    `unmeasured`. Reason: a remembered number has no provenance and the
    verifier cannot check it.
-2. Paste `stock_report` tables unchanged. Cite any other number as
-   `[m:<metric_id>]`. Check the decision doc with `stock_verify_doc`.
+2. `stock_report` returns a compact receipt and saves its table at `artifact_path`.
+   A fresh-context worker copies that table unchanged into the decision doc. Cite
+   any other number as `[m:<metric_id>]`, then run `stock_verify_doc`.
 3. Stop on any stop state. Only the user resumes. Never retry, rotate or
    bypass. Reason: a CAPTCHA, sign-in wall or HTTP 403/429 means Adobe is
    limiting the session; pushing on risks the user's account.
@@ -43,8 +44,9 @@ changed.
 3. If `stop` is not null: report the reason; do not queue work. The user runs
    `PYTHONPATH=src python3 stock.py resume` in the tool repo
    (`stock_resume` refuses unless the user's config allows it).
-4. First time with the tool: `stock_knowledge(topic="index")`, read `mindset`,
-   then only the topic you need.
+4. First time with the tool: `stock_knowledge(topic="index")` lists short topic
+   names. Request only the topic you need, then give its `artifact_path` to a
+   fresh-context worker for a short decision summary. Do not load it into the lead context.
 
 ## 3. Pacing, daily cap and time planning
 
@@ -96,12 +98,14 @@ Optional fourth: `ai_filter: "no_ai"` (gives `ai_split_gap`).
 The call returns `{"job_ids": [...]}` at once. Then wait:
 
 1. Call `stock_wait(job_ids=[...], timeout_seconds=120)` (120 is the maximum).
-2. Read each job's `state`. `done` = read and parsed; `failed` = read failed;
-   `queued` or `dispatched` = not finished.
-3. If any job is still `queued` or `dispatched` and `stop` is null, call
-   `stock_wait` again with the unfinished ids. Do this in a loop; each call
-   waits at most 120 s. Do not queue the same requests again (a duplicate of a
-   queued request returns the same job id anyway).
+2. Read `state`, `job_state_counts`, `unfinished_job_ids`, `failed_job_ids`
+   and `stop` from the compact receipt. Completed non-search jobs retain an `observations` map
+   from job id to obs_id for `stock_observation`; if the receipt is too large, this map stays in its evidence artifact.
+3. If `unfinished_job_ids` is non-empty and `stop` is null, read `queue_reason`.
+   For `pacing`, `queued` or `dispatched`, call `stock_wait` again only with
+   those ids. For `daily_cap`, keep the ids until the next UTC day. For
+   `extension_disconnected`, reconnect the extension and keep the ids. Never
+   queue the same requests again.
 4. If `stop` is not null, stop the loop and report the reason.
 
 Then render the table:
@@ -110,9 +114,10 @@ Then render the table:
 stock_report(keywords=["christmas bakery cookies", "..."], media_type="photo", lead_as_of="<today YYYY-MM-DD>")
 ```
 
-It returns `markdown` (paste it unchanged), `render_sha256` and `metric_ids`.
-Use `stock_observation(obs_id)` only to check one stored read; do not paste raw
-observations into documents.
+It returns a compact receipt with `artifact_path`, `render_sha256` and metric
+count. A fresh-context worker may copy the artifact's `markdown` unchanged.
+`stock_observation(obs_id)` also returns a compact receipt; inspect its artifact
+only through a worker when the underlying rows can change a decision.
 
 What the columns mean (tool README): `results` and `supply_band` (<2k high
 niche, <15k medium, <50k moderate, else saturated); `ai_share` (AI-only count /
@@ -191,10 +196,10 @@ Mapping new asset ids to local files after an upload:
 
 1. Run `stock_portfolio` (and `stock_outcomes_scan`) after the user's batch
    has been processed.
-2. Call `stock_outcomes`. Its `accepted` list has `asset_id` and
-   `original_name` for page 1 of the portfolio (up to 100). Compare its length
-   with `accepted_total`; older assets may be on later pages.
-3. A row whose `original_name` equals a file name in the batch package is a
+2. Call `stock_outcomes`. Compare `accepted_ids_read` with `accepted_total`;
+   older assets may be on later pages. Give its evidence artifact to a
+   fresh-context worker when per-asset matching is required.
+3. In that artifact, an `accepted` row whose `original_name` equals a file name in the batch package is a
    high-confidence match. Thumbnail matching (`thumb_url`) is the fallback.
 4. Write a CSV `asset_id,group` with high-confidence rows only, where `group`
    is the series `family` from the registry, and import it with

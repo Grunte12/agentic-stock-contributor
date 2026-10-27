@@ -72,8 +72,31 @@ class App:
                 raise ValueError("unknown job id")
             pending = [j for j in jobs if j["state"] in ("queued", "dispatched")]
             if not pending or self.queue.stop_state() or time.time() >= end:
+                stop = self.queue.stop_state()
+                reason = None
+                next_action = None
+                if pending and stop:
+                    reason = "stopped:" + str(stop["reason"])
+                    next_action = "report the stop; do not retry or resume without the user's explicit instruction"
+                elif pending and self.queue.pages_today() >= self.cfg["pacing"]["daily_cap"]:
+                    reason = "daily_cap"
+                    next_action = "keep these unfinished job ids; wait for the next UTC day and do not scan again"
+                elif pending and any(j["state"] == "dispatched" for j in pending):
+                    reason = "dispatched"
+                    next_action = "call stock_wait again with only these unfinished job ids"
+                elif pending:
+                    wait = self.store.get_state("next_allowed", 0) - self.queue.clock()
+                    if wait > 0:
+                        reason = f"pacing:{int(wait) + 1}"
+                        next_action = "call stock_wait again with only these unfinished job ids"
+                    elif not self.bridge or not self.bridge.connected():
+                        reason = "extension_disconnected"
+                        next_action = "reconnect the extension; keep these job ids and do not scan again"
+                    else:
+                        reason = "queued"
+                        next_action = "call stock_wait again with only these unfinished job ids"
                 return {"jobs": [{"job_id": j["job_id"], "kind": j["kind"], "state": j["state"], "obs_id": j["obs_id"]}
-                                 for j in jobs], "stop": self.queue.stop_state()}
+                                 for j in jobs], "stop": stop, "queue_reason": reason, "next": next_action}
             time.sleep(1)
 
     def stock_observation(self, obs_id):

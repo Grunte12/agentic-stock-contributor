@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- MCP results now have a deterministic 1,800-character context boundary. Long reports, observations, outcomes, knowledge topics and errors are saved as content-addressed evidence artifacts; the lead receives only operational facts, provenance and the artifact path for fresh-context review. Direct Python and CLI results remain unchanged.
+- `stock_wait` now returns a small inline receipt without writing an artifact and explains whether unfinished work is paced, at the daily cap, disconnected, dispatched or stopped. Schemas expose batch, keyword and timeout limits, and `stock_resume` explicitly requires a current user instruction as well as the local switch.
 - Extension 0.10.3 also stops on Adobe's generic partial-submission banner before fetching image bytes, while keeping it distinct from a confirmed submission-limit message.
 - Extension 0.10.2 checks for Adobe's visible submission-limit banner before fetching any image bytes and stops immediately, avoiding a large x4 transfer that cannot be submitted.
 - Transform QC now compares raw and final crops at the same normalized display scale and confirms failures blind to the first verdict, preventing x4 outputs from being penalized merely for higher magnification.

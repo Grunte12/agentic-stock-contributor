@@ -13,7 +13,8 @@ Agent-facing; English. Reply to the user in the user's language.
    matching `workspace/PLAYBOOK.md` entries; at the end log, update state, release). It is the shared memory of every agent.
 1. Call `stock_status`. If `bridge_connected` is false, say so; market numbers are then `unmeasured`. If `stop` is not null,
    report its reason and queue nothing; only the user resumes. Note `pages_today` against `daily_cap`.
-2. Read the know-how you need with `stock_knowledge` (topic `index` lists them; read only the one you need):
+2. Use `stock_knowledge(topic=index)` to list topic names. A full topic returns an `artifact_path`: give that path to a
+   fresh-context subagent and ask for at most five decision-relevant bullets; do not open the artifact in the lead context. Read only what the task needs:
    `mindset` (read first), `analytics-tools` (read before any scan), `niche-research`, `production-workflow`, `generation`, `qc-upscale`,
    `metadata-seo`, `upload-and-portal`, `community-evidence`.
    The same docs are in `references/` next to this file when the skill was installed with `install-skill`.
@@ -31,8 +32,8 @@ one step at a time, and ask choices with your host's question tool. Do the work 
   queue waits for the next day. No tool takes a pacing value. Tell the user the page count before a large scan.
 - One phrase needs 3 scans for a `supply_rating`: `ai_filter all` + `order relevance`, `ai_filter only_ai` + `order relevance`,
   `ai_filter all` + `order downloads`. Fewer scans leave it `UNMEASURED`.
-- `stock_wait` waits at most 120 s per call; call it again with the unfinished job ids until none is `queued` or `dispatched`,
-  or a stop appears. Do not queue the same scans again.
+- `stock_wait` waits at most 120 s per call; read `queue_reason` and call it again only with the unfinished job ids until none is
+  `queued` or `dispatched`, or a stop appears. A daily cap or disconnected extension keeps the same ids; do not scan again.
 - The MCP server reads the config once at start. Changed pacing, events, lead weeks, bands or weights apply only after the
   server restarts. Call `stock_restart_server`, then confirm `server_instance_id` changed with `stock_status`; queued jobs and
   the sticky stop are preserved. The `upload_stage` and `upload_metadata` switches are read on every use.
@@ -43,7 +44,8 @@ one step at a time, and ask choices with your host's question tool. Do the work 
 ## Rules that never bend
 
 - Code makes every number. Never type a count, volume, rate or sale from memory. Missing = `unmeasured`.
-- Paste `stock_report` tables unchanged; cite other numbers as `[m:<metric_id>]`; check a doc with `stock_verify_doc`.
+- `stock_report` saves the verified table at `artifact_path`. Have a fresh-context subagent copy it unchanged into the decision doc;
+  cite other numbers as `[m:<metric_id>]`; check the doc with `stock_verify_doc`.
 - Never click Submit. Staging (`stock_upload_stage`) only fills the New list, only when the user asked for it in chat for this run, and only when the user turned `upload_stage.enabled` on. Metadata (`stock_upload_metadata`) applies the plan's CSV and flags and only runs when the user turned `upload_metadata.enabled` on and answered the people/property question.
 - Stop on CAPTCHA, restriction, sign-in, 403/429, unknown page, hash mismatch, partial stage. Never retry; only the user resumes.
 - Never stage protected, holdout, quarantine or superseded folders.
@@ -68,9 +70,10 @@ one step at a time, and ask choices with your host's question tool. Do the work 
 | Visual summary for the user | `stock_dashboard` |
 | Stop now | `stock_stop` |
 
-Token habits: batch scans; read the rendered report, not raw observations; never ask for page dumps; hand visual QC to a capable
-fresh-context reviewer and keep only its JSON evidence in the lead context. Confirm a visual fail with an independent visual
-reviewer; never infer or overturn it from text alone.
+Context rule: the lead keeps only status, STOP reasons, measured counts, decisions and the next action. Full reports, observations,
+page dumps, logs and visual evidence stay in files. Give a needed artifact to a capable fresh-context reviewer and request a fixed,
+short result; ignore artifacts that cannot change the decision. Confirm a visual fail with an independent visual reviewer; never
+infer or overturn it from text alone.
 
 ## The end-to-end job
 
