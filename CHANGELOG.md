@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+
+- Transform QC now compares raw and final crops at the same normalized display scale and confirms failures blind to the first verdict, preventing x4 outputs from being penalized merely for higher magnification.
 ## Toolkit 0.14.2
 
 - Image review now uses Source → Transform → Ship gates: concrete raw defects, transform regressions, then file/similarity/metadata checks. A safer transform can recover a clean source without treating concept strength as a technical failure.

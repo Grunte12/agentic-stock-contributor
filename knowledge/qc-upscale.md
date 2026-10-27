@@ -20,9 +20,12 @@ Contact sheets are fine only for spotting look-alikes across the batch.
 At Source Gate, distinguish technical defects from hard brief misses (such as occupied required copy space)
 and strategic notes. Record brief misses separately in the existing notes; do not call them technical defects.
 An unfamiliar mechanism or unclear business meaning alone does not prove impossible geometry. At Transform Gate, compare
-the same raw and final regions and ask whether the transform added or amplified a
-defect. A transform failure gets one safer transform from the same raw before the
-source is discarded.
+the same raw and final regions at the same normalized display scale first. Hide the
+transform name, factor and prior verdict from the reviewer. Then inspect the final
+at native size for absolute deliverability. Fail only a localized defect that is
+absent or materially weaker in the matched raw and clearly worse in the final;
+added resolution by itself is not a regression. A transform failure gets one
+user-approved safer transform from the same raw before the source is discarded.
 
 ### Who looks: a visual reviewer; the lead keeps compact evidence
 
@@ -57,10 +60,16 @@ Reply with JSON only:
 `[scenario one-liner]` comes from the registry (or the CSV title), never from the file name: a name is a weak description and
 makes "subject does not match" verdicts unreliable.
 
+For Transform Gate, give the reviewer both raw and final frames plus matching
+tiles, without naming the model or scale. The first pass compares normalized
+views of the same scene area at the same display size; the second pass checks the
+final at 100%. This prevents a 4x final from being penalized merely because it is
+shown at twice the linear magnification of a 2x final.
+
 Then follow SKILL.md stage 8: merge into `qc_decisions.json`; an independent
-visual second look confirms or overturns each fail at its named tile.
-Use that same second look for uncertainty that could change readiness; match localized findings afterward.
-Unresolved uncertainty stays out of the package, not in the confirmed fail list.
+visual second look confirms or overturns each fail without seeing the first
+reviewer's verdict or defect description. Use that same second look for uncertainty that could change readiness;
+match localized findings afterward. Unresolved uncertainty stays out of the package, not in the confirmed fail list.
 
 ### Pick your reviewer setup (by host capability)
 
@@ -251,7 +260,7 @@ Adobe outcomes for both are unmeasured yet.
 
 So both routes did well **after the veto**; a plain resize of five other files without a matched control was 2 of 5.
 Rules: run the artifact checks in the QC prompt on every final; for a vetoed final, compare its crop with the same crop of
-the raw first (a defect may already be in the raw), then either regenerate a simpler scene or, with the user's yes, use a
+the raw at a matched display scale first (a defect may already be in the raw), then either regenerate a simpler scene or, with the user's yes, use a
 plain resize and **label it as a resize** in the lineage (`upscale_manifest.json` records the backend). Never call a resize an AI upscale.
 Check the license of any other model weights before using them commercially; no stated license, do not use.
 
