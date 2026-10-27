@@ -112,6 +112,11 @@ The link token is derived from the pairing token but opens the dashboard only; i
 cd tests && PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -p 'test_*.py'
 ```
 
+Local MCP fixture benchmark: `python3 scripts/eval_mcp_workflow.py --repeats 3`.
+It measures local latency and response size, without opening a browser or uploading. Tokens are character-based estimates;
+model cost and live portal speed are unmeasured. `--score-plans` checks case plans in `workspace/evals/luna_low_*.json`
+against tool schemas and expected actions; it does not execute those plans or prove live success.
+
 ## Docs
 
 `docs/` has the setup, safety and [toolkit architecture](docs/architecture/) guides. `CHANGELOG.md` tracks extension changes.

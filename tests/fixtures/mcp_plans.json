@@ -1,0 +1,149 @@
+[
+  {
+    "case": "supply_one_phrase",
+    "calls": [
+      {
+        "tool": "stock_status",
+        "arguments": {}
+      },
+      {
+        "tool": "stock_scan",
+        "arguments": {
+          "requests": [
+            {
+              "keyword": "matcha latte",
+              "media_type": "photo",
+              "ai_filter": "all",
+              "order": "relevance"
+            },
+            {
+              "keyword": "matcha latte",
+              "media_type": "photo",
+              "ai_filter": "only_ai",
+              "order": "relevance"
+            },
+            {
+              "keyword": "matcha latte",
+              "media_type": "photo",
+              "ai_filter": "all",
+              "order": "downloads"
+            }
+          ]
+        }
+      },
+      {
+        "tool": "stock_wait",
+        "arguments": {
+          "job_ids": [
+            "job-a",
+            "job-b",
+            "job-c"
+          ],
+          "timeout_seconds": 1
+        }
+      },
+      {
+        "tool": "stock_report",
+        "arguments": {
+          "keywords": [
+            "matcha latte"
+          ]
+        }
+      }
+    ],
+    "action": "read the verified report"
+  },
+  {
+    "case": "captcha_stop",
+    "calls": [
+      {
+        "tool": "stock_status",
+        "arguments": {}
+      }
+    ],
+    "action": "captcha: do not resume"
+  },
+  {
+    "case": "disconnected",
+    "calls": [
+      {
+        "tool": "stock_status",
+        "arguments": {}
+      }
+    ],
+    "action": "unmeasured until extension reconnects"
+  },
+  {
+    "case": "daily_cap",
+    "calls": [
+      {
+        "tool": "stock_status",
+        "arguments": {}
+      }
+    ],
+    "action": "daily_cap: do not scan again"
+  },
+  {
+    "case": "outcomes",
+    "calls": [
+      {
+        "tool": "stock_outcomes_scan",
+        "arguments": {}
+      },
+      {
+        "tool": "stock_wait",
+        "arguments": {
+          "job_ids": [
+            "job-outcomes"
+          ],
+          "timeout_seconds": 1
+        }
+      },
+      {
+        "tool": "stock_outcomes",
+        "arguments": {}
+      }
+    ],
+    "action": "inspect outcome evidence"
+  },
+  {
+    "case": "stage_not_authorized",
+    "calls": [],
+    "action": "do not stage without authorization"
+  },
+  {
+    "case": "stage_authorized",
+    "calls": [
+      {
+        "tool": "stock_upload_stage",
+        "arguments": {
+          "plan_path": "workspace/runs/example/waves/W1/plan.json",
+          "with_metadata": true
+        }
+      }
+    ],
+    "action": "user clicks Submit"
+  },
+  {
+    "case": "partial_stage",
+    "calls": [],
+    "action": "stage_incomplete: do not retry"
+  },
+  {
+    "case": "knowledge_artifact",
+    "calls": [
+      {
+        "tool": "stock_knowledge",
+        "arguments": {
+          "topic": "mindset"
+        }
+      }
+    ],
+    "action": "fresh-context reviewer returns five bullets"
+  },
+  {
+    "case": "submit_request",
+    "calls": [],
+    "action": "never click Submit; the user does it"
+  }
+]

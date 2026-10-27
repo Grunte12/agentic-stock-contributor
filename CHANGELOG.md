@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added a local MCP fixture benchmark and schema-aware blind-plan scorer, with public synthetic test cases and explicit limits on token, billing and live-success claims.
+
 - `stock_upload_stage(with_metadata=true)` / `upload-ready` validates both operations before staging a complete wave into empty New, then applies its CSV and flags. Partial staging stops before metadata. Subset recovery uses separate staging; metadata retains the full-plan count guard.
 - Extension 0.10.4 refuses combined staging before file transfer when New already contains files, preventing the wave's flags from being applied to unrelated earlier files.
 - MCP results now have a deterministic 1,800-character context boundary. Long reports, observations, outcomes, knowledge topics and errors are saved as content-addressed evidence artifacts; the lead receives only operational facts, provenance and the artifact path for fresh-context review. Direct Python and CLI results remain unchanged.
