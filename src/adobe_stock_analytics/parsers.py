@@ -158,6 +158,10 @@ def parse_upload_stage(payload, expected_names):
     if _blocked(payload):
         return _result("blocked", _blocked(payload))
     err = payload.get("error")
+    if err == "submission_limit":
+        return _result("blocked", "submission_limit")
+    if err == "submission_blocked":
+        return _result("blocked", "submission_blocked")
     if err == "sha_mismatch":
         return _result("unknown", "stage_sha_mismatch", bad_file=str(payload.get("bad_file"))[:200])
     if err == "no_upload_input":

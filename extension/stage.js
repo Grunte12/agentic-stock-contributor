@@ -27,6 +27,8 @@ function intelStageState(names) {
   const m = text.match(/File types:\s*All\s*\((\d+)\)/i);
   const byTag = document.querySelector('[data-t="submit-moderation-button"]');
   return { input_found: !!intelDropZone(), all_count: m ? parseInt(m[1], 10) : null, uploading: /\d+\s+Uploads?\s+Remaining/i.test(text),
+    submission_limit: /submission limit reached|reached (?:the|your) submission limit/i.test(text),
+    submission_blocked: /not all of your contents could be submitted for moderation/i.test(text),
     submit_text: byTag ? (byTag.textContent || "").trim() : null, names_seen: (names || []).filter((n) => text.includes(n)) };
 }
 if (typeof module !== "undefined") module.exports = { intelDropZone, intelStageBatch, intelStageState };

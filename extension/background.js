@@ -102,10 +102,18 @@ async function stageFiles(tabId, job) {
   const base = await extract(tabId, "probe");
   const out = { kind: "upload_stage", page_state: base && base.page_state, http_status: base && base.http_status, error: null };
   if (!base || base.page_state || (base.http_status && base.http_status >= 400)) return out;
+  const blocked = /submission limit reached|reached (?:the|your) submission limit/i.test(base.text || "") ? "submission_limit"
+    : /not all of your contents could be submitted for moderation/i.test(base.text || "") ? "submission_blocked" : null;
+  if (blocked) {
+    out.error = blocked;
+    return out;
+  }
   const names = job.files.map((f) => f.name);
   await chrome.scripting.executeScript({ target: { tabId }, files: ["stage.js"] });
   out.before = await readStable(tabId, names);
   if (!out.before || !out.before.input_found) { out.error = "no_upload_input"; return out; }
+  if (out.before.submission_limit) { out.error = "submission_limit"; return out; }
+  if (out.before.submission_blocked) { out.error = "submission_blocked"; return out; }
   if (out.before.all_count === null || out.before.uploading) return out;
   let batch = [];
   let size = 0;
@@ -135,6 +143,8 @@ async function stageFiles(tabId, job) {
   }
   await reloadTab(tabId);
   out.after = await readStable(tabId, names);
+  if (out.after && out.after.submission_limit) out.error = "submission_limit";
+  if (out.after && out.after.submission_blocked) out.error = "submission_blocked";
   out.names_seen = (out.after && out.after.names_seen) || [];
   return out;
 }

@@ -163,6 +163,14 @@ class StageQueueTests(unittest.TestCase):
         q.next_job()
         self.assertEqual(q.complete(jid, {"kind": "upload_stage", "page_state": "signin"})["status"], "blocked")
 
+    def test_submission_limit_blocks_before_transfer(self):
+        for error in ("submission_limit", "submission_blocked"):
+            q, jid, _ = staged_queue(tempfile.mkdtemp())
+            q.next_job()
+            res = q.complete(jid, {"kind": "upload_stage", "error": error})
+            self.assertEqual((res["status"], res["reason"]), ("blocked", error))
+            self.assertIn("upload_stage:" + error, q.stop_state()["reason"])
+
     def test_turning_the_switch_off_before_dispatch_cancels_the_job(self):
         q, jid, _ = staged_queue(self.tmp)
         q.cfg = CFG

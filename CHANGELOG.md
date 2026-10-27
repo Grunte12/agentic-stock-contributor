@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Extension 0.10.3 also stops on Adobe's generic partial-submission banner before fetching image bytes, while keeping it distinct from a confirmed submission-limit message.
+- Extension 0.10.2 checks for Adobe's visible submission-limit banner before fetching any image bytes and stops immediately, avoiding a large x4 transfer that cannot be submitted.
 - Transform QC now compares raw and final crops at the same normalized display scale and confirms failures blind to the first verdict, preventing x4 outputs from being penalized merely for higher magnification.
 ## Toolkit 0.14.2
 
@@ -52,6 +54,8 @@
 
 Bump `extension/manifest.json` version on every change under `extension/`. `stock_status` shows the version the running extension reports (`extension_version`).
 
+- 0.10.3: staging also stops on “Not all of your contents could be submitted for moderation,” but reports `submission_blocked` rather than claiming the weekly limit caused it. No new permissions.
+- 0.10.2: staging checks Adobe's visible submission-limit banner before fetching any image bytes and stops immediately. No new permissions.
 - 0.10.1: the after-load URL check also accepts `?isa0=<digits>` and no other query, because the portal sometimes redirects `/en/uploads` to `/en/uploads?isa0=1` (seen 2026-10-16; staging stopped as `restricted`). No new permissions.
 - 0.10.0: portfolio read now covers every page. New `pager.js` with one guarded click on a plain page-number control inside `[data-t="core-pagination"]` (Next/Previous, anything outside that block and anything named submit, delete, remove, trash, publish, release, save or upload is refused). Cards of all pages are merged by asset id; names stay page 1 only (later pages have no embedded list). The payload records `page_numbers`, `pages_read` and `pager_error`. No new permissions.
 - 0.9.1: `upload_metadata` can also tick the sidebar box "People and Property are fictional" (flag `people_property_fictional`) and reads its state back with the other flags. Same guarded click, no new permissions.

@@ -164,7 +164,34 @@ class ExtractTests(unittest.TestCase):
         out = json.loads(subprocess.run(["node", "-e", js], capture_output=True, text=True, check=True).stdout)
         self.assertEqual(out["r"], {"input_found": True, "assigned": 1})
         self.assertEqual(out["events"], ["dragenter:true:1", "dragover:true:1", "drop:true:1"])
-        self.assertEqual(out["st"], {"input_found": True, "all_count": 3, "uploading": True, "submit_text": "Submit 0 files", "names_seen": ["a.jpg"]})
+        self.assertEqual(out["st"], {"input_found": True, "all_count": 3, "uploading": True, "submission_limit": False,
+                                     "submission_blocked": False,
+                                     "submit_text": "Submit 0 files", "names_seen": ["a.jpg"]})
+
+    def test_stage_detects_submission_limit_without_clicking(self):
+        js = f"""
+        global.document = {{
+          body: {{innerText: "Submission limit reached\\nFile types: All (47)"}},
+          querySelector: (s) => s === ".uploader__drop" ? {{}} : null
+        }};
+        const {{intelStageState}} = require({json.dumps(str(EXT / "stage.js"))});
+        process.stdout.write(JSON.stringify(intelStageState([])));
+        """
+        out = json.loads(subprocess.run(["node", "-e", js], capture_output=True, text=True, check=True).stdout)
+        self.assertTrue(out["submission_limit"])
+
+    def test_stage_detects_partial_submission_banner_without_guessing_limit_kind(self):
+        js = f"""
+        global.document = {{
+          body: {{innerText: "Not all of your contents could be submitted for moderation.\\nFile types: All (51)"}},
+          querySelector: (s) => s === ".uploader__drop" ? {{}} : null
+        }};
+        const {{intelStageState}} = require({json.dumps(str(EXT / "stage.js"))});
+        process.stdout.write(JSON.stringify(intelStageState([])));
+        """
+        out = json.loads(subprocess.run(["node", "-e", js], capture_output=True, text=True, check=True).stdout)
+        self.assertTrue(out["submission_blocked"])
+        self.assertFalse(out["submission_limit"])
 
     def test_meta_js_has_one_guarded_click_and_never_submits_or_fetches(self):
         src = (EXT / "meta.js").read_text()
