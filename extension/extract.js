@@ -75,6 +75,9 @@ function intelExtract(kind) {
     out.named = c.items.map((i) => ({ asset_id: i.asset_id, original_name: i.original_name, status: i.status, created_ms: i.created_ms }));
     out.named_total = c.total;
   } else if (kind === "probe") {
+    const c = intelContent();
+    out.named = c.items.map((i) => ({ asset_id: i.asset_id, original_name: i.original_name, status: i.status }));
+    out.named_total = c.total;
     out.text = text.slice(0, 40000);
     out.tab_labels = Array.from(new Set(text.match(/[A-Za-z][A-Za-z ]{2,24}\(\d+\)/g) || [])).slice(0, 40);
     const tags = {};

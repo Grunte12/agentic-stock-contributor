@@ -56,7 +56,7 @@ def build_portfolio():
 
 
 # Own-dashboard pages the read-only probe may open. Nothing else on the contributor portal.
-CONTRIB_PAGES = {"portfolio": "/en/portfolio", "uploads": "/en/uploads", "rejected": "/en/uploads/rejected"}
+CONTRIB_PAGES = {"portfolio": "/en/portfolio", "uploads": "/en/uploads", "in_review": "/en/uploads/review", "rejected": "/en/uploads/rejected"}
 
 
 def build_probe(page):

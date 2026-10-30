@@ -34,7 +34,7 @@ Stage only when the user asked for it in chat for this run and turned the switch
    holds a different number of files than the plan (Select All would touch them).
    Do not widen this count guard to include unrelated files. If New contains earlier files, use a user-reviewed complete plan
    for that list or keep metadata paused; a measured total alone does not authorize changing their flags.
-6. **Human**: the user looks at the New list and clicks Submit.
+6. **Human**: follow `workflow-checklist` before declaring files ready. Extension 0.10.6 or newer supports read-only `stock_probe(page="uploads")` and `stock_probe(page="in_review")` with whitelisted file IDs, names and statuses. Reload the extension after updating; restart the MCP server and refresh the host's tool discovery if `in_review` is missing from its schema. Record a successful before-Submit checkpoint; the user clicks Submit. After their report, read both lists again and reconcile exact IDs. An empty New list does not prove submission; incomplete identity lists cannot pass the checkpoint.
 7. **Outcomes**: `stock_outcomes_scan` then `stock_outcomes` read the Not accepted list with Adobe's cause per asset
    (9 = Tech problems, shown as Quality Issues; 8 = Similar content). Accepted ids come from `stock_portfolio`.
 

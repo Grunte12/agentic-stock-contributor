@@ -1,11 +1,11 @@
 {
   "manifest_version": 3,
   "name": "Adobe Stock Analytics",
-  "version": "0.10.4",
+  "version": "0.10.6",
   "description": "Adobe Stock page reader that reports to a local bridge. Can stage plan-verified files on the Uploads page (user enabled). No cookies, never submits; the only clicks are guarded (portfolio page numbers, upload metadata).",
   "minimum_chrome_version": "116",
   "permissions": ["scripting", "storage", "alarms"],
-  "host_permissions": ["https://stock.adobe.com/*", "https://contributor.stock.adobe.com/en/portfolio", "https://contributor.stock.adobe.com/en/uploads", "https://contributor.stock.adobe.com/en/uploads/rejected", "http://127.0.0.1:8777/*"],
+  "host_permissions": ["https://stock.adobe.com/*", "https://contributor.stock.adobe.com/en/portfolio", "https://contributor.stock.adobe.com/en/uploads", "https://contributor.stock.adobe.com/en/uploads/review", "https://contributor.stock.adobe.com/en/uploads/rejected", "http://127.0.0.1:8777/*"],
   "background": {"service_worker": "background.js"},
   "action": {"default_title": "Open the Stock Analytics dashboard"},
   "options_page": "options.html"

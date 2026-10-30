@@ -4,7 +4,7 @@
 // upload_stage jobs put plan-verified files on the Uploads page's drop zone (stage.js) and read the All (N) count back; nothing is clicked and the Submit button is never touched.
 // The one extra read is intelHistory (extract.js): same-origin GETs of /en/content/<id>/history on the Not accepted page.
 const BRIDGE = "http://127.0.0.1:8777";
-const ALLOWED = /^(https:\/\/stock\.adobe\.com\/|https:\/\/contributor\.stock\.adobe\.com\/en\/(portfolio|uploads|uploads\/rejected)$)/;
+const ALLOWED = /^(https:\/\/stock\.adobe\.com\/|https:\/\/contributor\.stock\.adobe\.com\/en\/(portfolio|uploads|uploads\/review|uploads\/rejected)$)/;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let running = false;
 let FILE_TOKEN = "";

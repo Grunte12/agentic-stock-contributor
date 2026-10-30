@@ -25,9 +25,22 @@ class StaticScan(unittest.TestCase):
         self.assertEqual(sorted(m["permissions"]), ["alarms", "scripting", "storage"])
         self.assertEqual(sorted(m["host_permissions"]), ["http://127.0.0.1:8777/*", "https://contributor.stock.adobe.com/en/portfolio",
                                                        "https://contributor.stock.adobe.com/en/uploads",
-                                                       "https://contributor.stock.adobe.com/en/uploads/rejected", "https://stock.adobe.com/*"])
+                                                       "https://contributor.stock.adobe.com/en/uploads/rejected",
+                                                       "https://contributor.stock.adobe.com/en/uploads/review", "https://stock.adobe.com/*"])
         for k in ("content_scripts", "externally_connectable", "web_accessible_resources", "optional_permissions"):
             self.assertNotIn(k, m)
+
+    def test_background_allows_only_exact_review_page(self):
+        src = (EXT / "background.js").read_text()
+        regex = re.search(r"const ALLOWED = (/.*?/);", src).group(1)
+        js = 'const allowed = ' + regex + '; console.log(JSON.stringify([' + ','.join(json.dumps(u) for u in [
+            "https://contributor.stock.adobe.com/en/uploads/review",
+            "https://contributor.stock.adobe.com/en/uploads/review?x=1",
+            "https://contributor.stock.adobe.com/en/uploads/review/submit"]) + '].map(u => allowed.test(u))));'
+        if not shutil.which("node"):
+            self.skipTest("node not installed")
+        result = subprocess.run(["node", "-e", js], capture_output=True, text=True, check=True)
+        self.assertEqual(json.loads(result.stdout), [True, False, False])
 
     def test_no_forbidden_apis(self):
         for f in EXT.glob("*.js"):
@@ -363,6 +376,31 @@ class ExtractTests(unittest.TestCase):
         r = self.run_extract("outcomes", {"text": "", "href": "https://contributor.stock.adobe.com/en/uploads/rejected",
                                           "path": "/en/uploads/rejected", "scripts": []})
         self.assertFalse(r["ctx_found"])
+
+    def test_uploads_probe_keeps_identity_without_private_context(self):
+        import urllib.parse
+        ctx = {"csrfToken": "SECRET", "reduxState": {"contentMeta": {"contentTotal": 2}, "content": [
+            {"id": 11, "originalName": "a.jpg", "status": "state_new", "title": "private title"}]}}
+        src = 'window.__react_context__ = "' + urllib.parse.quote(json.dumps(ctx), safe="") + '";'
+        r = self.run_extract("probe", {"href": "https://contributor.stock.adobe.com/en/uploads",
+                                       "path": "/en/uploads", "scripts": [src]})
+        self.assertEqual(r["named"], [{"asset_id": 11, "original_name": "a.jpg", "status": "state_new"}])
+        self.assertEqual(r["named_total"], 2)
+        for secret in ("SECRET", "private title", "csrfToken"):
+            self.assertNotIn(secret, json.dumps(r))
+
+    def test_review_probe_retains_waiting_status_and_unknown_list(self):
+        import urllib.parse
+        ctx = {"reduxState": {"contentMeta": {"contentTotal": 1}, "content": [
+            {"id": 22, "originalName": "review.jpg", "status": "state_waiting_validation"}]}}
+        src = 'window.__react_context__ = "' + urllib.parse.quote(json.dumps(ctx), safe="") + '";'
+        page = {"href": "https://contributor.stock.adobe.com/en/uploads/review", "path": "/en/uploads/review"}
+        result = self.run_extract("probe", {**page, "scripts": [src]})
+        self.assertEqual(result["named"], [{"asset_id": 22, "original_name": "review.jpg", "status": "state_waiting_validation"}])
+        self.assertEqual(result["named_total"], 1)
+        unknown = self.run_extract("probe", {**page, "scripts": []})
+        self.assertEqual(unknown["named"], [])
+        self.assertIsNone(unknown.get("named_total"))  # unknown is not a confirmed empty list
 
     def test_history_reads_only_cause_fields_and_stops_on_429(self):
         out = self.run_node("""

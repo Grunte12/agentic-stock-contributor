@@ -211,6 +211,14 @@ class McpContractTests(unittest.TestCase):
         job = self.app.queue.job(self.app.queue.enqueue("outcomes", {}))
         self.assertEqual(job["url"], "https://contributor.stock.adobe.com/en/uploads/rejected")
 
+    def test_review_probe_schema_and_job_agree(self):
+        tool = next(t for t in self.rpc("tools/list")["tools"] if t["name"] == "stock_probe")
+        self.assertIn("in_review", tool["inputSchema"]["properties"]["page"]["enum"])
+        result = self.call("stock_probe", page="in_review")
+        job = self.app.queue.job(result["job_ids"][0])
+        self.assertEqual(job["kind"], "probe")
+        self.assertEqual(job["url"], "https://contributor.stock.adobe.com/en/uploads/review")
+
     def test_extra_args_rejected(self):
         self.assertIn("unexpected arguments", self.call("stock_status", url="https://x"))
 

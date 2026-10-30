@@ -212,6 +212,9 @@ class LivePortfolioTests(unittest.TestCase):
     def test_urls_allowlist(self):
         self.assertTrue(urls.is_allowed(urls.build_portfolio()))
         self.assertTrue(urls.is_allowed(urls.build_probe("uploads")))  # own uploads list, read-only (extension 0.6.0)
+        self.assertEqual(urls.build_probe("in_review"), "https://contributor.stock.adobe.com/en/uploads/review")
+        self.assertTrue(urls.is_allowed(urls.build_probe("in_review")))
+        self.assertFalse(urls.is_allowed(urls.build_probe("in_review") + "?x=1"))
         with self.assertRaises(urls.UrlError):
             urls.build_probe("account")
         for bad in ("https://contributor.stock.adobe.com/en/uploads?x=1", "https://contributor.stock.adobe.com/en/portfolio?x=1",
