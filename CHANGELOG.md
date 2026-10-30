@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added the mandatory Adobe session checklist and local `checkpoint` command: append-only session/gate timestamps, verified exact-ID pre-Submit readiness, user-reported Submit, after-Submit reconciliation and outcome snapshots. Logging time stays separate from unknown click/decision times; no new MCP catalog tools or portal actions.
+
 - Added a local MCP fixture benchmark and schema-aware blind-plan scorer, with public synthetic test cases and explicit limits on token, billing and live-success claims.
 
 - `stock_upload_stage(with_metadata=true)` / `upload-ready` validates both operations before staging a complete wave into empty New, then applies its CSV and flags. Partial staging stops before metadata. Subset recovery uses separate staging; metadata retains the full-plan count guard.

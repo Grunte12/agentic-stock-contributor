@@ -1,6 +1,6 @@
 ---
 name: adobe-stock
-description: Adobe Stock research, niche choice, production and upload know-how with the adobe-stock-analytics MCP tools (stock_*): measure supply and season, decide sub-niches, QC and package a batch, stage verified files on the Uploads page (the user clicks Submit), read outcomes. Use for any Adobe Stock contributor task: niche or keyword research, demand/supply, series planning, QC, metadata, upload, rejections.
+description: "Adobe Stock research, niche choice, production and upload know-how with the adobe-stock-analytics MCP tools (stock_*): measure supply and season, decide sub-niches, QC and package a batch, stage verified files on the Uploads page (the user clicks Submit), read outcomes. Use for any Adobe Stock contributor task: niche or keyword research, demand/supply, series planning, QC, metadata, upload, rejections."
 ---
 
 # Adobe Stock (tool + know-how)
@@ -11,6 +11,9 @@ Agent-facing; English. Reply to the user in the user's language.
 
 0. Working inside the toolkit repository: follow the session loop in `AGENTS.md` first (read `workspace/STATE.md`, claim,
    matching `workspace/PLAYBOOK.md` entries; at the end log, update state, release). It is the shared memory of every agent.
+   **Every session, including handoff/compaction:** follow `knowledge/workflow-checklist.md` (installed: `references/workflow-checklist.md`).
+   Create a `checkpoint start` receipt, retain its session ID, and use the same checklist at each applicable gate.
+   Before handing files to the user for Submit, require a successful `before-submit` receipt. A local QC/metadata pass is not that receipt.
 1. Call `stock_status`. If `bridge_connected` is false, say so; market numbers are then `unmeasured`. If `stop` is not null,
    report its reason and queue nothing; only the user resumes. Note `pages_today` against `daily_cap`.
 2. Use `stock_knowledge(topic=index)` to list topic names. A full topic returns an `artifact_path`: give that path to a
@@ -56,6 +59,7 @@ one step at a time, and ask choices with your host's question tool. Do the work 
 | Job | Tool |
 |---|---|
 | Is the extension connected, queue state | `stock_status` |
+| Persist session, before/after Submit and outcome evidence locally | `stock.py checkpoint` (CLI; checklist `workflow-checklist`) |
 | Supply of keyword phrases (up to 20 requests per call; 3 per phrase) | `stock_scan` then `stock_wait` (loop) then `stock_report` |
 | Keywords of specific assets | `stock_asset` |
 | Competitor gallery | `stock_contributor` |

@@ -19,6 +19,9 @@ always with options and a recommended answer, and keep going on everything that 
 `workspace/STATE.md` is now, `workspace/LOG.md` is history, `workspace/PLAYBOOK.md` is what this account has learned and what
 the user has decided. Any agent (Claude, Codex, Cursor, Antigravity, others) reads and keeps the same three files. If they are
 missing, run `python3 stock.py init`.
+Every Adobe session, including a handoff or context reset, must use `knowledge/workflow-checklist.md` and
+`python3 stock.py checkpoint start --run <run-or-task> --agent <agent>`; keep its session ID in `STATE.md`.
+Do not declare files ready for the user's Submit without a successful `before-submit` checkpoint; record their report and verify exact IDs afterward.
 
 1. **Start**: read `STATE.md`. If `Working now:` names another agent less than 12 hours ago, ask the user before you touch that
    run. Otherwise set `Working now: <you> since <YYYY-MM-DD HH:MM> UTC on <task>`. Read the `PLAYBOOK.md` entries whose tags

@@ -8,8 +8,10 @@ sub-niches to continue, fix or drop.
 
 ## 1. Read the verdicts (read-only)
 
+Use the mandatory `workflow-checklist` each session. Save `checkpoint results` with the source observation IDs and the matching before-Submit checkpoint when one exists; first-observed outcome time is not Adobe's decision time.
+
 1. `stock_outcomes_scan` and `stock_portfolio`, then `stock_wait` on both job ids.
-2. Note the read times. Files Adobe has not decided yet are pending; re-read weekly, not daily.
+2. Note the read times. Confirm pending IDs with `stock_probe(page="in_review")`; absence from accepted/rejected alone is unknown. Re-read when requested; do not create a recurring monitor without user authorization.
 
 ## 2. Group the files
 

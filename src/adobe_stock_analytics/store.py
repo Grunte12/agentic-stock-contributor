@@ -46,6 +46,8 @@ CREATE TABLE IF NOT EXISTS upload_outcome(
   cause INTEGER, cause_label TEXT, outcome_class TEXT);
 CREATE INDEX IF NOT EXISTS ix_upload_outcome_obs ON upload_outcome(obs_id);
 CREATE TABLE IF NOT EXISTS state(key TEXT PRIMARY KEY, value TEXT);
+CREATE TABLE IF NOT EXISTS workflow_event(
+  event_id TEXT PRIMARY KEY, recorded_at TEXT, phase TEXT, run TEXT, session_id TEXT, before_id TEXT, data TEXT);
 """
 
 

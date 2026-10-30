@@ -17,6 +17,8 @@ Three files are the single source of truth for every agent that works here (any 
 
 ## Folders
 
+Every Adobe session also follows `knowledge/workflow-checklist.md`. `python3 stock.py checkpoint` stores append-only session/gate events in the existing private database; export them under `workspace/outcomes/` for analytics. Keep session and before-Submit checkpoint IDs in `STATE.md` across handoffs. A logging/observation timestamp is never substituted for the user's exact click or Adobe's decision time.
+
 | Folder | Stages | What goes in it |
 |---|---|---|
 | `research/` | 1-3 | Niche notes and decision docs built from `stock_report` tables (`research/README.md`) |

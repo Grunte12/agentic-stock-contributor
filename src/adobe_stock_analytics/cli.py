@@ -19,6 +19,14 @@ def main(argv=None):
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("serve", help="run the MCP server (stdio) and the extension bridge")
     sub.add_parser("status")
+    ck = sub.add_parser("checkpoint", help="record local workflow evidence and timestamps; never contacts or submits to Adobe")
+    from .checkpoints import PHASES
+    ck.add_argument("phase", choices=PHASES)
+    for flag in ("run", "agent", "session", "before", "stage", "out"):
+        ck.add_argument("--"+flag)
+    ck.add_argument("--obs", action="append", default=[])
+    ck.add_argument("--evidence", action="append", default=[])
+    ck.add_argument("--user-confirmed", action="store_true")
     sub.add_parser("resume", help="clear the stop state (user only)")
     sub.add_parser("write-extension-token", help="write extension/token.js so the extension pairs without typing")
     sub.add_parser("token-path", help="print where the pairing token is stored")
@@ -140,6 +148,13 @@ def main(argv=None):
     app = App(a.data_dir)
     if a.cmd == "status":
         out = app.stock_status()
+    elif a.cmd == "checkpoint":
+        from .checkpoints import record
+        try:
+            out = record(app.store, a.phase, run=a.run, agent=a.agent, session=a.session, before=a.before,
+                         obs=a.obs, evidence=a.evidence, stage=a.stage, user_confirmed=a.user_confirmed, out=a.out)
+        except (OSError, ValueError, TypeError) as e:
+            out = {"ok": False, "error": str(e)}
     elif a.cmd == "resume":
         app.queue.resume()
         out = {"stop": app.queue.stop_state()}
