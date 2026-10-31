@@ -104,12 +104,13 @@ an adapter.
 - **One failed image never blocks the batch**: quarantine per image; promote the passing ones.
 - **Prompt length**: about 600-1000 characters worked; about 2000-character prompts returned text instead of an image (one chat
   provider, 2026-08) [REPO].
-- **Prompt craft**: describe one observable business action, the physical relationships it needs, and the useful composition.
-  For AI concepts, show the monitoring, verification or human sign-off action rather than relying on an invisible capability
-  assigned to a generic box. Specify critical connections or routes (a sensor's dedicated cable connector; a continuous step-free
-  path to the entrance). Add only constraints that prevent a concrete ambiguity; avoid blanket bans on props or long negative lists.
+- **Prompt craft**: start with the buyer task: who would use this image, and for what? Show one clear business action in a
+  simple scene with only the props it needs. Include people, hands and interface detail only when they clarify that task.
+  For AI concepts, make the AI-assisted task legible through relevant objects, the environment or a simple interaction;
+  do not add dashboards, provenance labels or human sign-off by default. Describe essential physical relationships, and add
+  constraints only to prevent a concrete ambiguity; avoid blanket bans on props or long negative lists.
   Make a hard brief constraint easy to verify through composition: if faces must be absent, keep people out of view or use empty
-  windows rather than relying on tiny, ambiguous figures or reflections. This improves brief fidelity; it is not a proven fix for a rejection.
+  windows rather than relying on tiny, ambiguous figures or reflections. Lower complexity is a working hypothesis, not a proven acceptance fix.
 - **Distinct concepts**: compare the intended action and composition with earlier work before generating. A new customer problem,
   action or visual structure is more meaningful than changing only color or camera angle; it still does not guarantee acceptance.
   Keep the chosen niche, but give the next concept a distinct buyer task and visible action, supported by its props and composition.
