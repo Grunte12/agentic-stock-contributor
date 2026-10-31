@@ -51,6 +51,7 @@ NOT a defect: depth-of-field blur, a soft background, intended bokeh,
 intended glow lines or light overlays, plausible wear, casting texture or keyed contacts.
 If a material suspected defect has a plausible physical explanation you cannot resolve, use
 uncertain and state what needs checking; do not infer a defect from an Adobe rejection label.
+Do not tighten QC or prescribe a prompt/upscaler fix from a broad rejection category alone; localize the defect first.
 Reply with JSON only:
 {"file": "...", "verdict": "pass|fail|uncertain", "reason": "one line",
  "defects": [{"tile": "r?c?", "what": "..."}],
@@ -109,6 +110,8 @@ Rules for every setup:
      in `fail` with a one-line reason.
    - overturned: the defect is not there, or it is on the not-a-defect list.
      The file goes in `pass`, and `notes` records "overturned: <why>".
+     Name the crop and visual evidence that resolved the concern; distinguish it from an unresolved hard brief miss.
+     A technical pass does not resolve that separate hold, and an earlier reviewer's claim is not fresh visual confirmation.
 4. Write `qc_decisions.json`:
 
    ```json

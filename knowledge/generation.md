@@ -108,8 +108,12 @@ an adapter.
   For AI concepts, show the monitoring, verification or human sign-off action rather than relying on an invisible capability
   assigned to a generic box. Specify critical connections or routes (a sensor's dedicated cable connector; a continuous step-free
   path to the entrance). Add only constraints that prevent a concrete ambiguity; avoid blanket bans on props or long negative lists.
+  Make a hard brief constraint easy to verify through composition: if faces must be absent, keep people out of view or use empty
+  windows rather than relying on tiny, ambiguous figures or reflections. This improves brief fidelity; it is not a proven fix for a rejection.
 - **Distinct concepts**: compare the intended action and composition with earlier work before generating. A new customer problem,
   action or visual structure is more meaningful than changing only color or camera angle; it still does not guarantee acceptance.
+  Keep the chosen niche, but give the next concept a distinct buyer task and visible action, supported by its props and composition.
+  A clear local image-hash screen does not settle this comparison; a Similar refusal alone does not identify Adobe's matching image.
   Repeating a prompt does not keep the same person across a series.
 - Keep the provider name, model and settings in the run report. They do not go into titles or keywords [ADOBE].
 - Generation success is not QC and not Adobe acceptance. Next: Source Gate on the raw, then transform and compare the final against it.
