@@ -107,7 +107,9 @@ an adapter.
 - **Prompt craft**: start with the buyer task: who would use this image, and for what? Show one clear business action in a
   simple scene with only the props it needs. Include people, hands and interface detail only when they clarify that task.
   For AI concepts, make the AI-assisted task legible through relevant objects, the environment or a simple interaction;
-  do not add dashboards, provenance labels or human sign-off by default. Describe essential physical relationships, and add
+  check that the visible action expresses the named buyer task and AI-assisted purpose rather than relying on the title or keywords.
+  If AI assistance cannot be visually distinguished, a generic manual inspection does not establish it; treat this as brief fit, not a technical defect.
+  Do not add dashboards, provenance labels or human sign-off by default. Describe essential physical relationships, and add
   constraints only to prevent a concrete ambiguity; avoid blanket bans on props or long negative lists.
   Make a hard brief constraint easy to verify through composition: if faces must be absent, keep people out of view or use empty
   windows rather than relying on tiny, ambiguous figures or reflections. Lower complexity is a working hypothesis, not a proven acceptance fix.
