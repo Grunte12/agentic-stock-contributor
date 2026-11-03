@@ -272,6 +272,18 @@ async function readPortfolio(tabId) {
   return first;
 }
 
+function redirectDestination(value) {
+  try {
+    const url = new URL(value);
+    const scheme = ["http:", "https:"].includes(url.protocol) ? url.protocol : "other:";
+    const host = ["stock.adobe.com", "contributor.stock.adobe.com", "adobelogin.com"].includes(url.hostname)
+      ? url.hostname : "other-host";
+    const path = ["/", "/en/portfolio", "/en/uploads", "/en/uploads/review", "/en/uploads/rejected", "/signin", "/sign-in"].includes(url.pathname)
+      ? url.pathname : "/[redacted]";
+    return `${scheme}//${host}${path}`;
+  } catch (_) { return "unavailable"; }
+}
+
 async function runJob(job) {
   if (!ALLOWED.test(job.url)) throw new Error("url not allowlisted");
   const tabId = await workTab(job.url);
@@ -279,7 +291,7 @@ async function runJob(job) {
   const final = (await chrome.tabs.get(tabId)).url || "";
   // The portal sometimes redirects /en/uploads to /en/uploads?isa0=1 (seen 2026-10-16); accept only that exact query.
   const finalChecked = final.replace(/\?isa0=\d+$/, "");
-  const payload = !ALLOWED.test(finalChecked) ? { page_state: "restricted", note: "redirected outside allowlist" }
+  const payload = !ALLOWED.test(finalChecked) ? { page_state: "unexpected_redirect", destination: redirectDestination(final) }
     : job.kind === "upload_stage" ? await stageFiles(tabId, job)
     : job.kind === "upload_metadata" ? await metaFlow(tabId, job)
     : job.kind === "portfolio" ? await readPortfolio(tabId) : await extract(tabId, job.kind);

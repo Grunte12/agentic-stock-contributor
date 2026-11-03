@@ -53,7 +53,7 @@ class ParserTests(unittest.TestCase):
         self.assertEqual((p["status"], p["reason"]), ("unknown", "filters_not_applied"))
 
     def test_blocked_states(self):
-        for s in ("captcha", "restricted", "signin"):
+        for s in ("captcha", "restricted", "signin", "unexpected_redirect"):
             self.assertEqual(parsers.parse_search({"page_state": s})["status"], "blocked")
 
     def test_unknown_shape_never_zero(self):

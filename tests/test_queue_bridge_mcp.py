@@ -71,6 +71,16 @@ class QueueTests(unittest.TestCase):
         q.resume()
         self.assertIsNotNone(q.next_job()[0])
 
+    def test_unexpected_redirect_stops_without_retry(self):
+        q, ck = make_queue()
+        a = q.enqueue("search", REQ)
+        q.enqueue("search", {**REQ, "order": "downloads"})
+        q.next_job()
+        result = q.complete(a, {"page_state": "unexpected_redirect", "destination": "https://other-host/[redacted]"})
+        self.assertEqual((result["status"], q.stop_state()["reason"]), ("blocked", "unexpected_redirect"))
+        ck.t += 1000
+        self.assertEqual(q.next_job(), (None, "stopped:unexpected_redirect"))
+
     def test_http_403_stops(self):
         q, _ = make_queue()
         a = q.enqueue("search", REQ)

@@ -42,6 +42,19 @@ class StaticScan(unittest.TestCase):
         result = subprocess.run(["node", "-e", js], capture_output=True, text=True, check=True)
         self.assertEqual(json.loads(result.stdout), [True, False, False])
 
+    @unittest.skipUnless(shutil.which("node"), "node not installed")
+    def test_redirect_destination_redacts_secrets(self):
+        src = (EXT / "background.js").read_text()
+        helper = src[src.index("function redirectDestination"):src.index("async function runJob")]
+        urls = ["https://user:password@contributor.stock.adobe.com/en/portfolio?token=secret#fragment",
+                "https://token-secret.example/path-secret?secret=1#secret",
+                "https://stock.adobe.com/en/private-token/secret", "not a url"]
+        js = helper + "\nconsole.log(JSON.stringify(" + json.dumps(urls) + ".map(redirectDestination)));"
+        result = subprocess.run(["node", "-e", js], capture_output=True, text=True, check=True)
+        self.assertEqual(json.loads(result.stdout), ["https://contributor.stock.adobe.com/en/portfolio",
+                         "https://other-host/[redacted]", "https://stock.adobe.com/[redacted]", "unavailable"])
+        self.assertIn('page_state: "unexpected_redirect", destination: redirectDestination(final)', src)
+
     def test_no_forbidden_apis(self):
         for f in EXT.glob("*.js"):
             src = f.read_text()

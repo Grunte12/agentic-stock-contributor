@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- 0.10.7: distinguishes unexpected redirects from restrictions, retains a sanitized destination classification, and stops the queue for either.
+
 - Added the mandatory Adobe session checklist and local `checkpoint` command: append-only session/gate timestamps, verified exact-ID pre-Submit readiness, user-reported Submit, after-Submit reconciliation and outcome snapshots. Logging time stays separate from unknown click/decision times; no new MCP catalog tools or portal actions.
 
 - 0.10.6: adds an allowlisted read-only In review probe so submitted files can be verified by identity instead of inferred from an empty New list.

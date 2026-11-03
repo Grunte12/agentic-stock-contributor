@@ -10,7 +10,7 @@ _COUNT = re.compile(
 )
 # Adobe's "no exact match, related results below" heading: the exact phrase has 0 results; the rows are related assets.
 _NO_MATCH = re.compile(r"ไม่พบผลลัพธ์ที่ตรงกัน|เราไม่พบผลลัพธ์(?:\s+\S+)?\s+สำหรับ|we couldn't find (?:any )?(?:matches|results)|no (?:exact )?(?:matches|results) for", re.I)
-BLOCKED_STATES = {"captcha", "restricted", "signin"}
+BLOCKED_STATES = {"captcha", "restricted", "signin", "unexpected_redirect"}
 BLOCKED_HTTP = {403, 429}
 
 
