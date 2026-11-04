@@ -11,7 +11,7 @@ function intelMetaClick(el, label) {
   const aria = el.getAttribute("aria-label") || "";
   const text = (el.textContent || "").trim();
   if (el.closest('[data-t="submit-moderation-button"]') || INTEL_META_DENY.test(dt) || INTEL_META_DENY.test(aria) || /^submit/i.test(text)) return false;
-  const ok = INTEL_META_ALLOWED_DT.includes(dt) || label === "select-all" || label === "people-no" || label === "fictional";
+  const ok = INTEL_META_ALLOWED_DT.includes(dt) || label === "select-all" || label === "people-no" || label === "fictional" || label === "scoped-tile";
   if (!ok) return false;
   el.click();
   return true;
@@ -42,6 +42,51 @@ function intelMetaState() {
   };
 }
 
+// Identity is proven twice: the sole active grid tile and the sidebar thumbnail must agree.
+function intelMetaSelected(id) {
+  const grid = document.querySelector('[data-t="assets-content-grid"]');
+  const tiles = grid ? Array.from(grid.querySelectorAll('.upload-tile__wrapper')) : [];
+  const active = tiles.filter((t) => t.classList.contains('active'));
+  const side = Array.from(document.querySelectorAll('[data-t="asset-sidebar-header-thumbnail"]'));
+  const thumbId = (el) => { const img = el && (el.matches('img') ? el : el.querySelector('img')); const m = img && (img.src || '').match(/_F_(\d+)_/); return m ? Number(m[1]) : null; };
+  return intelMetaState().selected <= 1 && active.length === 1 && side.length === 1 && thumbId(active[0]) === id && thumbId(side[0]) === id;
+}
+
+function intelMetaSelectId(id) {
+  if (!Number.isSafeInteger(id) || id <= 0) return {clicked: false};
+  const grid = document.querySelector('[data-t="assets-content-grid"]');
+  const tiles = grid ? Array.from(grid.querySelectorAll('.upload-tile__wrapper')) : [];
+  const matches = tiles.filter((t) => { const imgs = t.querySelectorAll('img[alt="thumbnail"]'); return imgs.length === 1 && (imgs[0].src || '').match(/_F_(\d+)_/)?.[1] === String(id); });
+  if (matches.length !== 1) return {clicked: false};
+  if (intelMetaSelected(id)) return {clicked: true};
+  return {clicked: intelMetaClick(matches[0], "scoped-tile")};
+}
+
+function intelMetaScopedState(id) {
+  if (!intelMetaSelected(id)) return null;
+  const all = Array.from(document.querySelectorAll('input[type="checkbox"]')).find((i) => ((i.closest("label") || {}).innerText || "").trim() === "Select All");
+  if (!all || all.checked) return null;
+  const st = intelMetaState();
+  const text = (document.body && document.body.innerText) || "";
+  const people_prompt_visible = /(?:Add )?recognizable people or property\?/i.test(text);
+  return {ai_checked: st.ai_checked, include_checked: st.include_checked, fictional_checked: st.fictional_checked,
+    people_prompt_visible, save_enabled: st.save_enabled};
+}
+
+function intelMetaTarget(id, name) {
+  if (!intelMetaSelected(id)) return null;
+  const title = document.querySelector('textarea[data-t="asset-title-content-tagger"]');
+  const keywords = document.querySelector('textarea[data-t="content-keywords-ui-textarea"]');
+  const st = intelMetaState();
+  const scoped = intelMetaScopedState(id);
+  if (!scoped) return null;
+  const categories = Array.from(document.querySelectorAll('button[data-t="content-tagger-category-select"]'));
+  return {asset_id: id, original_name: name, category: categories.length === 1 ? (categories[0].textContent || "").trim() : null,
+    people_prompt_visible: scoped.people_prompt_visible, people_property: null, keyword_count: keywords ? keywords.value.split(",").filter((k) => k.trim()).length : null,
+    ai_checked: st.ai_checked, include_checked: st.include_checked, fictional_checked: st.fictional_checked,
+    title: title ? title.value : null, keywords: keywords ? keywords.value : null};
+}
+
 function intelMetaOpenCsv() {
   const b = document.querySelector('button[data-t="edit-menu-upload-csv"]');
   return { clicked: !!b && (b.textContent || "").trim() === "Upload CSV" && intelMetaClick(b, "csv") };
@@ -69,26 +114,29 @@ function intelMetaSelectAll() {
 }
 
 // With every file selected: set the common flags. A box is clicked only when it is not already in the wanted state.
-function intelMetaApplyFlags(flags) {
+function intelMetaApplyFlags(flags, id) {
+  const guarded = (el, label) => (id === undefined || intelMetaScopedState(id)) && intelMetaClick(el, label);
   const out = {};
   const ai = document.querySelector('input[data-t="content-tagger-checkbox"]');
-  if (flags.generative_ai && ai && !ai.checked) intelMetaClick(ai, "ai");
+  if (flags.generative_ai && ai && !ai.checked) guarded(ai, "ai");
   out.ai_checked = ai ? ai.checked : null;
   const fic = intelMetaFictionalBox();
-  if (flags.people_property_fictional && fic && !fic.checked) intelMetaClick(fic, "fictional");
+  if (flags.people_property_fictional && fic && !fic.checked) guarded(fic, "fictional");
   out.fictional_checked = fic ? fic.checked : null;
   const want = { no: "No", yes: "Yes", later: "Later" }[flags.people_property];
   const btn = Array.from(document.querySelectorAll("button")).find((b) => (b.textContent || "").trim() === want && b.closest("[class*='sidebar'], [class*='tagger'], form, section, div"));
-  out.people_clicked = !!btn && intelMetaClick(btn, want === "No" ? "people-no" : "people-other");
+  // Scoped AI metadata proves the fictional checkbox, never a generic Yes/No button.
+  out.people_clicked = id === undefined && !!btn && guarded(btn, want === "No" ? "people-no" : "people-other");
   const inc = document.querySelector('input[data-t="reusable-checkbox"]');
-  if (flags.include_in_submission && inc && !inc.checked) intelMetaClick(inc, "include");
+  if (flags.include_in_submission && inc && !inc.checked) guarded(inc, "include");
   out.include_checked = inc ? inc.checked : null;
   return out;
 }
 
-function intelMetaSave() {
+function intelMetaSave(id) {
+  if (id !== undefined && !intelMetaScopedState(id)) return { clicked: false, found: false };
   const b = document.querySelector('button[data-t="save-work"]');
   if (!b || b.disabled) return { clicked: false, found: !!b };
   return { clicked: intelMetaClick(b, "save"), found: true };
 }
-if (typeof module !== "undefined") module.exports = { intelMetaClick, intelMetaState, intelMetaFictionalBox, intelMetaOpenCsv, intelMetaSetCsv, intelMetaSelectAll, intelMetaApplyFlags, intelMetaSave };
+if (typeof module !== "undefined") module.exports = { intelMetaClick, intelMetaState, intelMetaFictionalBox, intelMetaOpenCsv, intelMetaSetCsv, intelMetaSelectAll, intelMetaApplyFlags, intelMetaSave, intelMetaSelected, intelMetaSelectId, intelMetaScopedState, intelMetaTarget };

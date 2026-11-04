@@ -119,7 +119,7 @@ class Bridge:
                         return self._send(200, {"job": None, "reason": "reload", "reload": True})
                     end = time.time() + bridge.poll_seconds
                     while True:
-                        job, reason = bridge.queue.next_job()
+                        job, reason = bridge.queue.next_job(self.headers.get("X-Intel-Ext", ""))
                         if job or reason.startswith("stopped") or time.time() >= end:
                             return self._send(200, {"job": job, "reason": reason})
                         time.sleep(0.5)

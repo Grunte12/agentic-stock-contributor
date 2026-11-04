@@ -174,7 +174,7 @@ class ReadyToolTests(unittest.TestCase):
         self.plan = {"names": ["a.jpg", "b.jpg"]}
 
     def test_preflight_then_empty_stage_then_metadata(self):
-        staged = {"status": "ok", "stop": None, "job_id": "stage", "expected": 2, "added": 2, "before": 0, "after": 2}
+        staged = {"status": "ok", "stop": None, "job_id": "stage", "expected": 2, "added": 2, "before": 0, "after": 2, "target_ids": {"a.jpg": 11, "b.jpg": 12}}
         metadata = {"status": "ok", "stop": None, "job_id": "meta", "all_count": 2, "submit_count": 2}
         calls = mock.Mock()
         with mock.patch("adobe_stock_analytics.app.upload_metadata.load_metadata_plan", return_value=self.plan) as preflight, \
@@ -183,8 +183,8 @@ class ReadyToolTests(unittest.TestCase):
             calls.attach_mock(preflight, "preflight"); calls.attach_mock(stage, "stage"); calls.attach_mock(meta, "metadata")
             out = self.app.stock_upload_ready("plan.json")
         self.assertEqual([c[0] for c in calls.mock_calls], ["preflight", "stage", "metadata"])
-        stage.assert_called_once_with("plan.json", require_empty=True)
-        meta.assert_called_once_with("plan.json")
+        stage.assert_called_once_with("plan.json")
+        meta.assert_called_once_with("plan.json", {"a.jpg": 11, "b.jpg": 12})
         self.assertEqual((out["status"], out["phase"], out["after"]), ("ok", "complete", 2))
 
     def test_disabled_metadata_or_invalid_csv_never_stages(self):

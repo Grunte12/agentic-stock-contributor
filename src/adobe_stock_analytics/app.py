@@ -233,7 +233,7 @@ class App:
         if dup:
             raise ValueError(f"already staged: {dup}. Stage only the rest with only=[...]; if the user cleared the New list, they run `reset-staged`")
         jid = self.queue.enqueue("upload_stage", {"package_digest": plan["package_digest"], "files": plan["files"],
-                                                  "require_empty": require_empty})
+                                                  "require_empty": require_empty, "scope_names": [f["name"] for f in plan["files"]]})
         end = time.time() + 110
         while time.time() < end:
             j = self.queue.job(jid)
@@ -242,12 +242,13 @@ class App:
             time.sleep(1)
         return self.stock_upload_result(jid)
 
-    def stock_upload_metadata(self, plan_path):
+    def stock_upload_metadata(self, plan_path, target_ids=None):
         """Apply the plan's CSV (title, keywords, category) to the staged files and set generative AI, people/property and
         include-in-submission for all of them. Never submits. Refused unless the user turned upload_metadata.enabled on."""
         plan = upload_metadata.load_metadata_plan(plan_path, self.cfg)
         jid = self.queue.enqueue("upload_metadata", {"package_digest": plan["package_digest"], "csv": plan["csv"],
-                                                     "count": len(plan["names"]), "flags": plan["flags"]})
+                                                     "count": len(plan["names"]), "flags": plan["flags"], "scope_names": plan["names"], "expected_metadata": plan["expected_metadata"],
+                                                     **({"target_ids": target_ids} if target_ids is not None else {})})
         end = time.time() + 110
         while time.time() < end:
             j = self.queue.job(jid)
@@ -257,27 +258,28 @@ class App:
         return self.stock_upload_result(jid)
 
     def stock_upload_ready(self, plan_path):
-        """Preflight both operations; stage a complete wave into empty New, then set metadata. Never submits."""
+        """Preflight both operations; stage the exact plan, then set metadata. Never submits."""
         plan = upload_metadata.load_metadata_plan(plan_path, self.cfg)
-        staged = self._upload_stage(plan_path, require_empty=True)
+        staged = self._upload_stage(plan_path)
         if staged.get("status") != "ok" or staged.get("stop"):
             return {**staged, "phase": "stage"}
-        if staged.get("before") != 0 or staged.get("after") != len(plan["names"]):
+        if set(staged.get("target_ids", {})) != set(plan["names"]):
             self.queue.stop("upload_stage:unexpected_new_contents")
             return {**staged, "phase": "stage", "status": "unknown", "reason": "unexpected_new_contents",
                     "stop": self.queue.stop_state()}
-        metadata = self.stock_upload_metadata(plan_path)
+        metadata = self.stock_upload_metadata(plan_path, staged["target_ids"])
         if metadata.get("status") != "ok" or metadata.get("stop"):
             return {**metadata, "phase": "metadata", "stage_job_id": staged.get("job_id")}
         return {"phase": "complete", "status": "ok", "stop": None,
                 "stage_job_id": staged.get("job_id"), "metadata_job_id": metadata.get("job_id"),
+                "target_ids": staged.get("target_ids"), "metadata_obs_id": metadata.get("obs_id"),
                 "expected": staged.get("expected"), "added": staged.get("added"),
                 "before": staged.get("before"), "after": metadata.get("all_count"),
                 "submit_count": metadata.get("submit_count"),
                 "tiles_with_keywords": metadata.get("tiles_with_keywords"),
                 "ai_checked": metadata.get("ai_checked"), "include_checked": metadata.get("include_checked"),
                 "fictional_checked": metadata.get("fictional_checked"),
-                "next": "metadata and flags are verified; files remain in New and the user clicks Submit"}
+                "next": "metadata and flags are verified for the plan; complete the separate whole-list readiness check before Submit"}
 
     def stock_upload_result(self, job_id):
         """Compact result of a stage job: how many files the portal's All (N) count rose by, and what is missing."""
@@ -289,7 +291,7 @@ class App:
         r = self.store.get_state(("metadata_result:" if meta else "stage_result:") + job_id)
         if r:
             out.update(r)
-            ok_next = "metadata and flags are set and saved, files are counted by Submit, not submitted: the user clicks Submit" if meta else "files are in the New list, not submitted: the user clicks Submit"
+            ok_next = "metadata and flags are verified for the plan; complete the separate whole-list readiness check before Submit" if meta else "files are in the New list, not submitted: the user clicks Submit"
             out["next"] = ok_next if r["status"] == "ok" else "do not retry blindly: look at the portal New list by hand, then the user runs `resume`"
         else:
             out["note"] = "not finished: the extension has not reported (check stock_status bridge_connected); call stock_upload_result again"

@@ -95,6 +95,18 @@ async function reloadTab(tabId) {
   await chrome.scripting.executeScript({ target: { tabId }, files: ["stage.js"] });
 }
 
+// The embedded list is authoritative only when it accounts for every New tile.
+function scopedIdentity(probe, count) {
+  const items = probe && probe.named;
+  if (!Array.isArray(items) || !Number.isInteger(count) || probe.named_total !== count || items.length !== count) return null;
+  const ids = new Set(), names = new Set();
+  for (const item of items) {
+    if (!Number.isSafeInteger(item.asset_id) || item.asset_id <= 0 || typeof item.original_name !== "string" || !item.original_name || ids.has(item.asset_id) || names.has(item.original_name.toLowerCase())) return null;
+    ids.add(item.asset_id); names.add(item.original_name.toLowerCase());
+  }
+  return items.map(({asset_id, original_name}) => ({asset_id, original_name}));
+}
+
 // Fetches each plan file from the bridge, re-checks its sha256, hands it to the page's drop zone in small batches, then reloads the
 // page and reads the "File types: All (N)" count again (read only). A background tab does not refresh its own list reliably, so the
 // count that decides success always comes from a fresh page load.
@@ -115,6 +127,13 @@ async function stageFiles(tabId, job) {
   if (out.before.submission_limit) { out.error = "submission_limit"; return out; }
   if (out.before.submission_blocked) { out.error = "submission_blocked"; return out; }
   if (out.before.all_count === null || out.before.uploading) return out;
+  if (job.scope_names) {
+    const scope = job.scope_names;
+    if (!Array.isArray(scope) || !scope.length || scope.some((n) => typeof n !== "string" || !n) || new Set(scope.map((n) => typeof n === "string" ? n.toLowerCase() : n)).size !== scope.length || names.length !== scope.length || names.some((n) => !scope.includes(n))) { out.error = "invalid_scope"; return out; }
+    out.before.items = scopedIdentity(base, out.before.all_count);
+    if (!out.before.items) { out.error = "incomplete_identity"; return out; }
+    if (out.before.items.some((i) => scope.some((n) => n.toLowerCase() === i.original_name.toLowerCase()))) { out.error = "name_collision"; return out; }
+  }
   if (job.require_empty && out.before.all_count !== 0) { out.error = "new_not_empty"; return out; }
   let batch = [];
   let size = 0;
@@ -146,6 +165,12 @@ async function stageFiles(tabId, job) {
   out.after = await readStable(tabId, names);
   if (out.after && out.after.submission_limit) out.error = "submission_limit";
   if (out.after && out.after.submission_blocked) out.error = "submission_blocked";
+  if (job.scope_names && out.after) {
+    const fresh = await extract(tabId, "probe");
+    if (!fresh || fresh.page_state || (fresh.http_status && fresh.http_status >= 400)) { if (fresh) { out.page_state = fresh.page_state; out.http_status = fresh.http_status; } out.error = "page_not_ready_after_stage"; return out; }
+    out.after.items = scopedIdentity(fresh, out.after.all_count);
+    if (!out.after.items) out.error = "incomplete_identity_after_stage";
+  }
   out.names_seen = (out.after && out.after.names_seen) || [];
   return out;
 }
@@ -175,7 +200,24 @@ async function metaFlow(tabId, job) {
   await injectMeta(tabId);
   const st0 = await pageCall(tabId, () => intelMetaState(), []);
   if (!st0 || st0.all_count === null || st0.uploading) return fail("page_not_ready", st0);
-  if (st0.all_count !== job.count) return fail("count_mismatch", { all_count: st0.all_count, expected: job.count });
+  let targets = null, initial = null;
+  if (job.scope_names) {
+    const scope = job.scope_names;
+    if (!Array.isArray(scope) || !scope.length || scope.length !== job.count || new Set(scope.map((n) => typeof n === "string" ? n.toLowerCase() : n)).size !== scope.length || scope.some((n) => typeof n !== "string" || !n)) return fail("invalid_scope");
+    initial = scopedIdentity(base, st0.all_count);
+    if (!initial) return fail("incomplete_identity");
+    targets = scope.map((name) => initial.find((item) => item.original_name === name));
+    if (targets.some((item) => !item)) return fail("scope_missing");
+    if (job.target_ids && (Object.keys(job.target_ids).length !== scope.length || targets.some((item) => job.target_ids[item.original_name] !== item.asset_id))) return fail("target_id_mismatch");
+    out.before = {all_count: st0.all_count, items: initial};
+    for (const item of targets) {
+      const sel = await pageCall(tabId, (id) => intelMetaSelectId(id), [item.asset_id]);
+      if (!sel || !sel.clicked) return fail("tile_missing");
+      await sleep(500);
+      const selected = await pageCall(tabId, (id) => intelMetaScopedState(id), [item.asset_id]);
+      if (!selected) return fail("selection_unverified");
+    }
+  } else if (st0.all_count !== job.count) return fail("count_mismatch", { all_count: st0.all_count, expected: job.count });
   out.steps.push("page_ready");
   const f = job.files[0];
   const r = await fetch(`${BRIDGE}/v1/file?job=${job.job_id}&i=${f.index}`, { headers: await headers() });
@@ -196,8 +238,66 @@ async function metaFlow(tabId, job) {
   await sleep(3000);
   await reloadTab(tabId);
   await injectMeta(tabId);
-  const w3 = await waitMeta(tabId, ms, (s) => s.all_count === job.count && !s.uploading);
+  const w3 = await waitMeta(tabId, ms, (s) => s.all_count === (targets ? initial.length : job.count) && !s.uploading);
   if (!w3.ok) return fail("page_not_ready_after_csv", w3.st);
+  if (targets) {
+    const sameItems = (items) => items && items.length === initial.length && initial.every((i) => items.some((j) => j.asset_id === i.asset_id && j.original_name === i.original_name));
+    const afterCsv = await extract(tabId, "probe");
+    if (afterCsv && (afterCsv.page_state || (afterCsv.http_status && afterCsv.http_status >= 400))) { out.page_state = afterCsv.page_state; out.http_status = afterCsv.http_status; return fail("page_not_ready_after_csv"); }
+    if (!afterCsv || !sameItems(scopedIdentity(afterCsv, initial.length))) return fail("identity_changed_after_csv");
+    for (const item of targets) {
+      const sel = await pageCall(tabId, (id) => intelMetaSelectId(id), [item.asset_id]);
+      if (!sel || !sel.clicked) return fail("tile_missing");
+      await sleep(500);
+      if (!(await pageCall(tabId, (id) => intelMetaScopedState(id), [item.asset_id]))) return fail("selection_unverified");
+      const applied = await pageCall(tabId, (fl, id) => intelMetaApplyFlags(fl, id), [job.flags, item.asset_id]);
+      if (!(await pageCall(tabId, (id) => intelMetaSelected(id), [item.asset_id]))) return fail("selection_changed");
+      await sleep(1000);
+      const appliedAgain = await pageCall(tabId, (fl, id) => intelMetaApplyFlags(fl, id), [job.flags, item.asset_id]);
+      if (!applied || !appliedAgain || !(await pageCall(tabId, (id) => intelMetaSelected(id), [item.asset_id]))) return fail("selection_changed");
+      const scoped = await pageCall(tabId, (id) => intelMetaScopedState(id), [item.asset_id]);
+      if (!scoped || scoped.save_enabled === null) return fail("selection_unverified");
+      const confirmed = (!job.flags.generative_ai || scoped.ai_checked === true) &&
+        (!job.flags.include_in_submission || scoped.include_checked === true) &&
+        (!job.flags.people_property_fictional || scoped.fictional_checked === true) &&
+        (!job.flags.people_property || (job.flags.people_property === "no" && !scoped.people_prompt_visible && scoped.fictional_checked === true));
+      if (!confirmed) return fail("flags_unverified");
+      if (scoped.save_enabled) {
+        const save = await pageCall(tabId, (id) => intelMetaSave(id), [item.asset_id]);
+        if (!save || !save.clicked) return fail("save_not_clicked");
+        const deadline = Date.now() + ms;
+        let clean = false;
+        while (Date.now() <= deadline) {
+          await sleep(1000);
+          const state = await pageCall(tabId, (id) => intelMetaScopedState(id), [item.asset_id]);
+          if (!state) return fail("selection_changed");
+          if (state.save_enabled === false) { clean = true; break; }
+          if (state.save_enabled === null) return fail("save_missing");
+        }
+        if (!clean) return fail("save_not_clean");
+      }
+    }
+    await reloadTab(tabId);
+    await injectMeta(tabId);
+    const finalState = await waitMeta(tabId, ms, (s) => s.all_count === initial.length && !s.uploading);
+    if (!finalState.ok) return fail("page_not_ready_after_save", finalState.st);
+    const finalProbe = await extract(tabId, "probe");
+    if (finalProbe && (finalProbe.page_state || (finalProbe.http_status && finalProbe.http_status >= 400))) { out.page_state = finalProbe.page_state; out.http_status = finalProbe.http_status; return fail("page_not_ready_after_save"); }
+    const finalItems = finalProbe && !finalProbe.page_state && !(finalProbe.http_status && finalProbe.http_status >= 400) && scopedIdentity(finalProbe, initial.length);
+    if (!sameItems(finalItems)) return fail("identity_changed_after_save");
+    const readbacks = [];
+    for (const item of targets) {
+      const sel = await pageCall(tabId, (id) => intelMetaSelectId(id), [item.asset_id]);
+      if (!sel || !sel.clicked) return fail("tile_missing_after_save");
+      await sleep(500);
+      const readback = await pageCall(tabId, (id, name) => intelMetaTarget(id, name), [item.asset_id, item.original_name]);
+      if (!readback) return fail("selection_unverified_after_save");
+      readbacks.push(readback);
+    }
+    out.after = {...finalState.st, items: finalItems, targets: readbacks};
+    out.steps.push("verified_after_reload");
+    return out;
+  }
   const sel = await pageCall(tabId, () => intelMetaSelectAll(), []);
   if (!sel || !sel.found || !sel.checked) return fail("select_all_failed", sel);
   const w4 = await waitMeta(tabId, ms, (s) => s.selected === job.count);

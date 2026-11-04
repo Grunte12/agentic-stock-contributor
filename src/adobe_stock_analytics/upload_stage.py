@@ -89,7 +89,7 @@ def load_plan(plan_path, cfg, only=None, now=None, switch="upload_stage"):
             raise StageError(f"{fp.name} is not an existing image file")
         files.append({"name": fp.name, "path": str(fp), "sha256": e["sha256"], "size": fp.stat().st_size})
     names = [f["name"] for f in files]
-    if len(set(names)) != len(names):
+    if len({n.casefold() for n in names}) != len(names):
         raise StageError("plan lists the same file name twice")
     if only is not None:
         if not isinstance(only, list) or not only or not all(isinstance(n, str) for n in only):

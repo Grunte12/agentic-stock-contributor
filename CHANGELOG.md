@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- 0.10.8: stage and apply metadata to the verified plan files in a populated New list. Match exact filenames and Adobe asset IDs, preserve unrelated files, and stop on incomplete or ambiguous results.
+
 - 0.10.7: distinguishes unexpected redirects from restrictions, retains a sanitized destination classification, and stops the queue for either.
 
 - Added the mandatory Adobe session checklist and local `checkpoint` command: append-only session/gate timestamps, verified exact-ID pre-Submit readiness, user-reported Submit, after-Submit reconciliation and outcome snapshots. Logging time stays separate from unknown click/decision times; no new MCP catalog tools or portal actions.

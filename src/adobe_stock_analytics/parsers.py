@@ -151,7 +151,23 @@ def parse_probe(payload):
     return _result("ok", chars=len(text), tab_labels=payload.get("tab_labels") or [])
 
 
-def parse_upload_stage(payload, expected_names):
+def _identity_list(side):
+    items, count = side.get("items"), side.get("all_count")
+    if not isinstance(items, list) or not isinstance(count, int) or isinstance(count, bool) or count != len(items):
+        return None
+    out, names = {}, set()
+    for row in items:
+        if not isinstance(row, dict):
+            return None
+        aid, name = row.get("asset_id"), row.get("original_name")
+        if not isinstance(aid, int) or isinstance(aid, bool) or aid <= 0 or not isinstance(name, str) or not name or aid in out or name.casefold() in names:
+            return None
+        out[aid] = name
+        names.add(name.casefold())
+    return out
+
+
+def parse_upload_stage(payload, expected_names, scoped=False):
     """Result of staging files on the Uploads page: the portal's "File types: All (N)" count must rise by exactly the number of files staged."""
     if not isinstance(payload, dict):
         return _result("unknown", "payload_not_object")
@@ -175,6 +191,17 @@ def parse_upload_stage(payload, expected_names):
     before, after = count(side("before")), count(side("after"))
     if before is None or after is None:
         return _result("unknown", "no_stage_shape")
+    if scoped:
+        old, new = _identity_list(side("before")), _identity_list(side("after"))
+        if old is None or new is None or len({name.casefold() for name in expected_names}) != len(expected_names):
+            return _result("unknown", "invalid_stage_identities")
+        old_names = {name.casefold() for name in old.values()}
+        added_ids = {aid: name for aid, name in new.items() if aid not in old}
+        if (old_names.intersection(name.casefold() for name in expected_names) or any(new.get(aid) != name for aid, name in old.items())
+                or len(added_ids) != len(expected_names) or set(added_ids.values()) != set(expected_names)):
+            return _result("unknown", "stage_identity_mismatch")
+        return _result("ok", expected=len(expected_names), added=len(added_ids), before=before, after=after,
+                       target_ids={name: aid for aid, name in added_ids.items()})
     seen = [n for n in (payload.get("names_seen") or []) if n in expected_names]
     added = after - before
     base = {"expected": len(expected_names), "added": added, "before": before, "after": after,
@@ -184,7 +211,7 @@ def parse_upload_stage(payload, expected_names):
     return _result("ok", **base)
 
 
-def parse_upload_metadata(payload, expected_count, flags=None):
+def parse_upload_metadata(payload, expected_count, flags=None, scope_names=None, target_ids=None, expected_metadata=None):
     """Result of applying the CSV and the flags: every expected file must be in the New list, carry keywords, and be counted by Submit."""
     if not isinstance(payload, dict):
         return _result("unknown", "payload_not_object")
@@ -196,6 +223,40 @@ def parse_upload_metadata(payload, expected_count, flags=None):
         return _result("unknown", "metadata_error:" + str(err)[:60], steps=steps, **({"detail": str(payload["detail"])[:300]} if payload.get("detail") else {}))
     side = payload.get("after") if isinstance(payload.get("after"), dict) else {}
     num = lambda k: side.get(k) if isinstance(side.get(k), int) and not isinstance(side.get(k), bool) else None
+    if scope_names is not None:
+        identities = _identity_list(side)
+        targets = side.get("targets")
+        if identities is None or not isinstance(targets, list) or len({name.casefold() for name in scope_names}) != len(scope_names):
+            return _result("unknown", "invalid_metadata_identities", steps=steps)
+        wanted = {name: aid for aid, name in identities.items() if name in scope_names}
+        if len(wanted) != len(scope_names) or (target_ids is not None and wanted != target_ids):
+            return _result("unknown", "metadata_identity_mismatch", steps=steps)
+        if len(targets) != len(scope_names) or any(not isinstance(t, dict) for t in targets):
+            return _result("unknown", "metadata_identity_mismatch", steps=steps)
+        observed = {t.get("original_name"): t.get("asset_id") for t in targets}
+        if observed != wanted or len(observed) != len(targets):
+            return _result("unknown", "metadata_identity_mismatch", steps=steps)
+        if not isinstance(expected_metadata, dict) or set(expected_metadata) != set(scope_names):
+            return _result("unknown", "invalid_expected_metadata", steps=steps)
+        for t in targets:
+            expected = expected_metadata[t["original_name"]]
+            if (not isinstance(expected, dict) or not isinstance(t.get("title"), str) or
+                    t["title"] != expected.get("title") or not isinstance(t.get("category"), str) or
+                    t["category"].strip().casefold() != expected.get("category", "").strip().casefold() or not isinstance(t.get("keywords"), str) or
+                    [k.strip().casefold() for k in t["keywords"].split(",")] !=
+                    [k.strip().casefold() for k in expected.get("keywords", [])]):
+                return _result("unknown", "metadata_content_mismatch", steps=steps)
+        if any(not (t.get("people_prompt_visible") is False and t.get("fictional_checked") is True or
+                    t.get("people_prompt_visible") is True and t.get("people_property") == "no") for t in targets):
+            return _result("unknown", "people_property_unverified", steps=steps)
+        if any(not isinstance(t.get("keyword_count"), int) or isinstance(t.get("keyword_count"), bool) or t["keyword_count"] < 5 for t in targets):
+            return _result("unknown", "metadata_incomplete", steps=steps)
+        if any(t.get("ai_checked") is not True or t.get("include_checked") is not True or
+               ((flags or {}).get("people_property_fictional") is True and t.get("fictional_checked") is not True) for t in targets):
+            return _result("unknown", "flags_not_set", steps=steps)
+        return _result("ok", expected=expected_count, all_count=num("all_count"), submit_count=num("submit_count"),
+                       tiles_with_keywords=len(targets), ai_checked=True, include_checked=True,
+                       fictional_checked=all(t.get("fictional_checked") is True for t in targets), steps=steps, target_ids=wanted)
     all_count, submit = num("all_count"), num("submit_count")
     kw = side.get("keyword_counts") if isinstance(side.get("keyword_counts"), list) else []
     if all_count is None or submit is None or not kw:

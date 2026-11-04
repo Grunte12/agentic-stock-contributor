@@ -19,21 +19,17 @@ Stage only when the user asked for it in chat for this run and turned the switch
    This tool has no similarity screen: compare look-alike concepts and recommend keeping the stronger distinct image; different waves do not make duplicates distinct.
    `ready_for_upload: true` means local package gates pass. It is not Adobe acceptance.
 3. **Fast path**: `stock_upload_stage(plan_path, with_metadata=true)` (or CLI `upload-ready`) validates the metadata switch,
-   CSV and flags before staging a complete wave into an empty New list, then applies metadata. Extension 0.10.4 refuses
-   non-empty New before fetching image bytes. Partial staging stops before metadata. Use separate staging with `only` for recovery;
-   the combined path does not accept subsets. Never Submit.
-4. **Stage**: `stock_upload_stage(plan_path, only?)` (or CLI `upload-stage`). The tool re-validates the plan and re-hashes every file;
-   the extension fetches each file from the local bridge, re-checks sha256, drops it on the Uploads page's own drop zone, and reads the
-   "File types: All (N)" count back (read only). Result: `expected`, `added`, `before`, `after`, `names_not_seen`.
-   Success means the All (N) count rose by exactly the number of files staged.
-5. **Metadata**: `stock_upload_metadata(plan_path)` (or CLI `upload-metadata`). Needs the user's switch `upload_metadata.enabled`. The tool checks
-   the plan, the one CSV (sha256, one row per file, title, 5-49 unique keywords, numeric category). The extension (0.9.0) opens the
-   portal's own Upload CSV dialog with that CSV, selects all files in the New list, sets generative AI, the people/property answer
-   (`upload_metadata.people_property`, the user's decision) and include-in-submission, clicks Save work, reloads and reads the state back.
-   Success = All (N) == Submit N == files in the plan, every tile has keywords, AI and include are checked. It refuses when the New list
-   holds a different number of files than the plan (Select All would touch them).
-   Do not widen this count guard to include unrelated files. If New contains earlier files, use a user-reviewed complete plan
-   for that list or keep metadata paused; a measured total alone does not authorize changing their flags.
+   CSV and flags before staging a complete wave. With extension 0.10.8 or newer, existing New files can stay in place.
+   Partial staging stops before metadata. The combined job binds metadata to the Adobe IDs observed after staging.
+   Use separate staging with `only` for recovery; the combined path does not accept subsets. Never Submit.
+4. **Stage**: `stock_upload_stage(plan_path, only?)` (or CLI `upload-stage`). The tool re-validates the plan and re-hashes every file.
+   The extension re-checks each file's sha256 and uses the page's own drop zone. It checks that no target name is already in New
+   and verifies that exactly the planned names gained IDs, with all previous New IDs retained.
+5. **Metadata**: `stock_upload_metadata(plan_path)` (or CLI `upload-metadata`). Needs `upload_metadata.enabled`.
+   The CSV must have exactly one row per plan file. The portal matches rows by filename. Before importing, the extension
+   proves the target names and IDs resolve uniquely. For flags and Save work, it verifies the selected tile and sidebar
+   match one target ID. It reloads and reads the targets back. Missing or ambiguous identities stop the operation.
+   Global New and Submit counts are separate from this plan's verified target count.
 6. **Human**: follow `workflow-checklist` before declaring files ready. Extension 0.10.6 or newer supports read-only `stock_probe(page="uploads")` and `stock_probe(page="in_review")` with whitelisted file IDs, names and statuses. Reload the extension after updating; restart the MCP server and refresh the host's tool discovery if `in_review` is missing from its schema. Record a successful before-Submit checkpoint; the user clicks Submit. After their report, read both lists again and reconcile exact IDs. An empty New list does not prove submission; incomplete identity lists cannot pass the checkpoint.
 7. **Outcomes**: `stock_outcomes_scan` then `stock_outcomes` read the Not accepted list with Adobe's cause per asset
    (9 = Tech problems, shown as Quality Issues; 8 = Similar content). Accepted ids come from `stock_portfolio`.
@@ -41,7 +37,7 @@ Stage only when the user asked for it in chat for this run and turned the switch
 ## What is never automated
 
 - Clicking Submit or Delete. The only clicks in the extension are inside `meta.js` (`intelMetaClick`): a four-control allow list
-  (Upload CSV, generative AI box, include box, Save work) plus Select All and the People/property answer; anything named or
+  (Upload CSV, generative AI box, include box, Save work) plus exact target tile selection and the People/property answer; anything named or
   labelled submit, delete, remove, trash, publish or release is refused; tests check this.
 - Staging a protected folder (`DO_NOT_UPLOAD`, `quarantine`, `holdout`), a plan that is not ready,
   a plan older than `max_plan_age_hours`, or a file whose sha256 no longer matches the plan.

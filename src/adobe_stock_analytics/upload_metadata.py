@@ -14,6 +14,7 @@ from .upload_stage import StageError, sha256_file
 
 REQUIRED = ["Filename", "Title", "Keywords", "Category"]
 PEOPLE = {"no", "yes", "later"}
+CATEGORIES = ["Animals", "Buildings and Architecture", "Business", "Drinks", "The Environment", "States of Mind", "Food", "Graphic Resources", "Hobbies and Leisure", "Industry", "Landscapes", "Lifestyle", "People", "Plants and Flowers", "Culture and Religion", "Science", "Social Issues", "Sports", "Technology", "Transport", "Travel"]
 
 
 def _check_rows(text, names, c):
@@ -35,10 +36,13 @@ def _check_rows(text, names, c):
             raise StageError(f"{fn}: duplicate keywords")
         if not re.fullmatch(r"\d{1,3}", (r.get("Category") or "").strip()):
             raise StageError(f"{fn}: category must be Adobe's numeric code")
-        rows[fn] = r
+        category = int(r["Category"].strip())
+        if not 1 <= category <= len(CATEGORIES):
+            raise StageError(f"{fn}: category must be between 1 and 21")
+        rows[fn] = {"title": title, "keywords": kws, "category": CATEGORIES[category - 1]}
     if set(rows) != set(names):
         raise StageError(f"CSV rows and plan files differ: only in CSV {sorted(set(rows) - set(names))}, only in plan {sorted(set(names) - set(rows))}")
-    return len(rows)
+    return rows
 
 
 def load_metadata_plan(plan_path, cfg, now=None):
@@ -63,6 +67,6 @@ def load_metadata_plan(plan_path, cfg, now=None):
     flags = {"generative_ai": c.get("mark_generative_ai") is True, "people_property": str(c["people_property"]).lower(),
              "include_in_submission": c.get("include_in_submission") is True,
              "people_property_fictional": c.get("people_property_fictional") is True}
-    return {"package_digest": plan["package_digest"], "rows": rows, "flags": flags,
+    return {"package_digest": plan["package_digest"], "rows": len(rows), "expected_metadata": rows, "flags": flags,
             "csv": {"name": p.name, "path": str(p), "sha256": entries[0]["sha256"], "size": p.stat().st_size},
             "names": [f["name"] for f in plan["files"]]}

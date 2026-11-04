@@ -200,6 +200,59 @@ class ExtractTests(unittest.TestCase):
                                      "submission_blocked": False,
                                      "submit_text": "Submit 0 files", "names_seen": ["a.jpg"]})
 
+    def test_scoped_identity_requires_complete_unique_ids_and_names(self):
+        bg = (EXT / "background.js").read_text()
+        fn = bg[bg.index("function scopedIdentity"):bg.index("// Fetches each plan file")]
+        js = fn + """
+        const p = {named_total: 2, named: [{asset_id: 1, original_name: 'old.jpg'}, {asset_id: 2, original_name: 'new.jpg'}]};
+        const good = scopedIdentity(p, 2);
+        const partial = scopedIdentity(p, 3);
+        const duplicate = scopedIdentity({named_total: 2, named: [p.named[0], {...p.named[1], asset_id: 1}]}, 2);
+        const unnamed = scopedIdentity({named_total: 1, named: [{asset_id: 1, original_name: null}]}, 1);
+        process.stdout.write(JSON.stringify({good, partial, duplicate, unnamed}));
+        """
+        out = json.loads(subprocess.run(["node", "-e", js], capture_output=True, text=True, check=True).stdout)
+        self.assertEqual(len(out["good"]), 2)
+        self.assertIsNone(out["partial"])
+        self.assertIsNone(out["duplicate"])
+        self.assertIsNone(out["unnamed"])
+
+    def test_scoped_metadata_preflights_selection_before_csv(self):
+        bg = (EXT / "background.js").read_text()
+        flow = bg[bg.index("async function metaFlow"):bg.index("let extInfo")]
+        self.assertLess(flow.index("intelMetaSelectId"), flow.index("intelMetaOpenCsv"))
+        self.assertLess(flow.index("target_id_mismatch"), flow.index("intelMetaOpenCsv"))
+        self.assertLess(flow.index("if (targets)"), flow.index("intelMetaSelectAll"))
+
+    def test_scoped_selection_requires_matching_unique_tile_and_sidebar(self):
+        dom = """(() => {
+          global.clicks = [];
+          const image = (id) => ({src: `https://example/220_F_${id}_x.jpg`});
+          global.active = 1; global.sidebar = 1; global.multi = false;
+          const tile = (id) => ({classList: {contains: () => global.active === id || global.multi},
+            matches: () => false, querySelector: () => image(id), querySelectorAll: () => [image(id)],
+            getAttribute: () => '', textContent: '', closest: () => null, click() { global.active = id; global.sidebar = id; clicks.push(id); }});
+          const tiles = [tile(1), tile(2)];
+          const grid = {querySelectorAll: () => tiles, children: []};
+          return {body: {innerText: ''}, querySelector: (s) => s.includes('assets-content-grid') ? grid : null,
+            querySelectorAll: (s) => s.includes('asset-sidebar-header-thumbnail') ? [{matches: () => true, src: image(global.sidebar).src}] : []};
+        })()"""
+        out = self.run_meta(dom, """(() => { const first = m.intelMetaSelected(1); const select = m.intelMetaSelectId(2);
+          const second = m.intelMetaSelected(2); global.sidebar = 1; const mismatch = m.intelMetaSelected(2);
+          global.sidebar = 2; global.multi = true; const multi = m.intelMetaSelected(2);
+          return {first, select, second, mismatch, multi, clicks}; })()""")
+        self.assertEqual(out, {"first": True, "select": {"clicked": True}, "second": True,
+                               "mismatch": False, "multi": False, "clicks": [2]})
+
+    def test_scoped_flags_and_save_guard_against_select_all(self):
+        src = (EXT / "meta.js").read_text()
+        self.assertIn('if (!all || all.checked) return null', src)
+        self.assertIn('(id === undefined || intelMetaScopedState(id)) && intelMetaClick', src)
+        self.assertIn('id !== undefined && !intelMetaScopedState(id)', src)
+        bg = (EXT / "background.js").read_text()
+        self.assertIn('if (!confirmed) return fail("flags_unverified")', bg)
+        self.assertIn('if (!clean) return fail("save_not_clean")', bg)
+
     def test_stage_detects_submission_limit_without_clicking(self):
         js = f"""
         global.document = {{

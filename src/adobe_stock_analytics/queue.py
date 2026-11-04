@@ -54,10 +54,10 @@ class Queue:
             elif kind == "outcomes":
                 url, params = urls.build_outcomes(), {}
             elif kind == "upload_stage":
-                url, params = urls.build_probe("uploads"), {"package_digest": params["package_digest"], "files": params["files"]}
+                url, params = urls.build_probe("uploads"), {k: params[k] for k in ("package_digest", "files", "scope_names", "require_empty") if k in params}
             elif kind == "upload_metadata":
                 url = urls.build_probe("uploads")
-                params = {"package_digest": params["package_digest"], "files": [params["csv"]], "count": params["count"], "flags": params["flags"]}
+                params = {"package_digest": params["package_digest"], "files": [params["csv"]], "count": params["count"], "flags": params["flags"], **{k: params[k] for k in ("scope_names", "target_ids", "expected_metadata") if k in params}}
             elif kind == "contributor":
                 url, params = urls.build_contributor(params["creator_id"]), {"creator_id": params["creator_id"]}
             else:
@@ -78,7 +78,7 @@ class Queue:
         return dict(r) if r else None
 
     # --- dispatch ----------------------------------------------------------
-    def next_job(self):
+    def next_job(self, extension_version=None):
         """Returns (job_or_None, reason). The extension only ever receives allowlisted URLs."""
         with self.lock:
             stop = self.stop_state()
@@ -110,6 +110,9 @@ class Queue:
             if r["kind"] == "upload_metadata" and upload_metadata_cfg(self.cfg).get("enabled") is not True:
                 self.store.db.execute("UPDATE job SET state='failed' WHERE job_id=?", (r["job_id"],))
                 return None, "upload_metadata_off"
+            prm = json.loads(r["params"])
+            if "scope_names" in prm and (not extension_version or not extension_version.isascii() or not all(x.isdigit() for x in extension_version.split(".")) or tuple(map(int, extension_version.split("."))) < (0, 10, 8)):
+                return None, "extension_upgrade_required"
             p = self.cfg["pacing"]
             self.store.set_state("next_allowed", now + p["min_gap_seconds"] + self.rng() * p["jitter_seconds"])
             self.store.set_state("dispatch_ts", now)
@@ -128,6 +131,10 @@ class Queue:
                 job["files"] = [{"index": 0, "name": prm["files"][0]["name"], "size": prm["files"][0]["size"], "sha256": prm["files"][0]["sha256"]}]
                 job["count"], job["flags"] = prm["count"], prm["flags"]
                 job["step_timeout_seconds"] = upload_metadata_cfg(self.cfg)["step_timeout_seconds"]
+            if "scope_names" in prm:
+                job["scope_names"] = prm["scope_names"]
+                if "target_ids" in prm:
+                    job["target_ids"] = prm["target_ids"]
             return job, "dispatched"
 
     def stage_file(self, job_id, index):
@@ -167,9 +174,9 @@ class Queue:
             elif j["kind"] == "outcomes":
                 parsed = parsers.parse_outcomes(payload)
             elif j["kind"] == "upload_stage":
-                parsed = parsers.parse_upload_stage(payload, [f["name"] for f in params["files"]])
+                parsed = parsers.parse_upload_stage(payload, [f["name"] for f in params["files"]], scoped="scope_names" in params)
             elif j["kind"] == "upload_metadata":
-                parsed = parsers.parse_upload_metadata(payload, params["count"], params.get("flags"))
+                parsed = parsers.parse_upload_metadata(payload, params["count"], params.get("flags"), params.get("scope_names"), params.get("target_ids"), params.get("expected_metadata"))
             else:
                 parsed = parsers.parse_contributor(payload)
             obs_id = self.store.add_observation(j["kind"], j["url"], params, payload, parsed)

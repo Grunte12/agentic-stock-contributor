@@ -47,7 +47,7 @@ def main(argv=None):
     us.add_argument("--with-metadata", action="store_true", help="immediately apply the plan CSV and flags after a verified stage")
     um = sub.add_parser("upload-metadata", help="apply the plan's CSV and the AI/people/include flags to the staged files; never submits")
     um.add_argument("plan")
-    ur = sub.add_parser("upload-ready", help="preflight and stage one complete wave into empty New, then apply metadata; never submits")
+    ur = sub.add_parser("upload-ready", help="preflight and stage the exact plan into New, then apply metadata; never submits")
     ur.add_argument("plan")
     sub.add_parser("reload-extension", help="ask the running extension to reload itself (after its files changed on disk)")
     sub.add_parser("reset-staged", help="forget which files were staged (user only; after clearing the portal New list)")

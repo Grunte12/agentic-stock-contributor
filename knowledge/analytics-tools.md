@@ -214,16 +214,15 @@ this run and turned the switch on.
 - `stock_upload_stage(plan_path, with_metadata=true)` puts the plan's files in the
   portal New list. Needs `upload_stage.enabled` true, a plan with
   `ready_for_upload: true`, at most 20 files and 200 MB, younger than 48 hours,
-  no protected folder. Success: `status` `ok` and the All (N) count rose by
-  exactly the number staged. With `with_metadata=true`, it preflights metadata, requires empty New,
-  then applies the CSV and flags for the complete wave; incomplete staging stops first. Subset recovery uses separate staging.
-- `stock_upload_metadata(plan_path)` applies the plan's CSV and the AI,
-  people/property and include flags. Needs `upload_metadata.enabled` true and
-  requires New to hold exactly the plan file count; there is no count override for earlier files.
+  no protected folder. On extension 0.10.8 or newer, success requires exactly the planned filenames
+  and new IDs, with earlier New identities preserved. With `with_metadata=true`, it preflights the CSV and flags
+  and applies them only to the new target IDs. Subset recovery uses separate staging.
+- `stock_upload_metadata(plan_path)` applies the plan's CSV and flags to the exact staged filenames.
+  Needs `upload_metadata.enabled` true and a complete New identity list. Other files can remain in New.
 - A failed or partial stage stops the queue (sticky). Do not retry. The user
   looks at the New list by hand, then runs `resume`. A file already staged (by
   sha256) is refused; stage the rest with `only`.
-- Say "staged, not submitted" only when the count rose. The user clicks Submit.
+- Say "staged, not submitted" only when the plan identities were verified. The user clicks Submit.
   Details: tool knowledge `upload-and-portal`.
 
 ## 10. Stop reasons you may see
