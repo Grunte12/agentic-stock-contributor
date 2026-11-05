@@ -22,18 +22,28 @@ function intelExtract(kind) {
   const h1 = document.querySelector("h1");
   const title = document.title || "";
   const host = location.hostname;
-  let page_state = null;
-  if (document.querySelector('iframe[src*="captcha" i], .g-recaptcha, #cf-challenge, [id*="captcha" i]') ||
-      /captcha|verify you are human|unusual traffic/i.test(text.slice(0, 4000))) page_state = "captcha";
-  else if (/temporarily restricted|access denied|too many requests/i.test(text.slice(0, 4000) + " " + title)) page_state = "restricted";
-  else if (/adobelogin\.com|\/sign-?in/i.test(host + location.pathname)) page_state = "signin";
-
   let http_status = null;
   try {
     const nav = performance.getEntriesByType("navigation")[0];
     if (nav && typeof nav.responseStatus === "number" && nav.responseStatus > 0) http_status = nav.responseStatus;
   } catch (err) { /* leave null */ }
-  const out = { kind, page_url: location.href, page_state, http_status, h1: h1 ? h1.innerText.slice(0, 300) : null };
+  // A CAPTCHA widget or iframe can be present without an active challenge.
+  const challengeSelector = '#cf-challenge, iframe[src*="recaptcha" i][src*="/bframe" i], iframe[src*="hcaptcha" i][src*="frame=challenge" i]';
+  const challenge = Array.from(document.querySelectorAll(challengeSelector)).find((el) => {
+    const style = getComputedStyle(el), box = el.getBoundingClientRect();
+    return style.visibility === "visible" && style.display !== "none" && Number(style.opacity) > 0 && box.width > 0 && box.height > 0;
+  });
+  const challengeText = /verify you are human|complete the captcha|solve the captcha/i.test(text.slice(0, 4000));
+  let page_state = null, stop_evidence = null;
+  if (challenge || challengeText) {
+    page_state = "captcha";
+    stop_evidence = { trigger: challenge ? "challenge_selector" : "visible_text", selector: challenge ? challengeSelector : null, visible: true, http_status };
+  } else if (http_status === 403 || http_status === 429) {
+    page_state = "restricted";
+    stop_evidence = { trigger: "http_status", selector: null, visible: false, http_status };
+  } else if (/temporarily restricted|access denied|too many requests/i.test(text.slice(0, 4000) + " " + title)) page_state = "restricted";
+  else if (/adobelogin\.com|\/sign-?in/i.test(host + location.pathname)) page_state = "signin";
+  const out = { kind, page_url: location.href, page_state, stop_evidence, http_status, h1: h1 ? h1.innerText.slice(0, 300) : null };
 
   if (kind === "search" || kind === "contributor") {
     const el = document.getElementById("image-detail-json");

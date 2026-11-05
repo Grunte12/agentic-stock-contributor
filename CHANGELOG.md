@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- 0.10.9: distinguish visible challenge evidence from HTTP restrictions and retain bounded stop evidence.
+
 - 0.10.8: stage and apply metadata to the verified plan files in a populated New list. Match exact filenames and Adobe asset IDs, preserve unrelated files, and stop on incomplete or ambiguous results.
 
 - 0.10.7: distinguishes unexpected redirects from restrictions, retains a sanitized destination classification, and stops the queue for either.

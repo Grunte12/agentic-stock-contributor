@@ -122,13 +122,14 @@ class ExtractTests(unittest.TestCase):
         js = f"""
         const dom = {json.dumps(dom)};
         const cardEls = (dom.cards || []).map(c => ({{querySelector: (q) => q === "img" ? {{src: c.src}} : {{textContent: c.dl}}}}));
+        global.getComputedStyle = (el) => ({{visibility: el.visible ? "visible" : "hidden", display: "block", opacity: "1"}});
         global.document = {{
           title: dom.title || "", body: {{innerText: dom.text || ""}},
           querySelector: (s) => /overview-downloads/.test(s) ? {{textContent: "3"}} : /overview-earnings/.test(s) ? {{textContent: "$1.50"}} :
                                 /overview-select/.test(s) ? {{value: "total"}} : (s === "h1" && dom.h1) ? {{innerText: dom.h1}} : (/captcha/i.test(s) && dom.captcha_el ? {{}} : null),
           scripts: (dom.scripts || []).map(t => ({{textContent: t}})),
           getElementById: (id) => (id === "image-detail-json" && dom.json) ? {{textContent: JSON.stringify(dom.json)}} : null,
-          querySelectorAll: (s) => s.includes("portfolio-single-asset-wrapper") ? cardEls : s.includes("similar-keyword-item") ? (dom.kw || []).map(t => ({{textContent: t}})) :
+          querySelectorAll: (s) => s.startsWith("#cf-challenge,") && dom.challenge && (!dom.frame || (dom.frame === "bframe" && s.includes("/bframe")) || (dom.frame === "hcaptcha" && s.includes("frame=challenge"))) ? [{{visible: dom.challenge === "visible", getBoundingClientRect: () => ({{width: 100, height: 100}})}}] : s.includes("portfolio-single-asset-wrapper") ? cardEls : s.includes("similar-keyword-item") ? (dom.kw || []).map(t => ({{textContent: t}})) :
                                    s === "button, a" ? (dom.btn || []).map(t => ({{textContent: t}})) : []
         }};
         global.location = {{href: dom.href, hostname: "stock.adobe.com", pathname: dom.path}};
@@ -152,6 +153,27 @@ class ExtractTests(unittest.TestCase):
         self.assertEqual(r["page_state"], "captcha")
         r = self.run_extract("search", {"text": "Access is temporarily restricted", "href": "https://stock.adobe.com/search?k=x", "path": "/search"})
         self.assertEqual(r["page_state"], "restricted")
+
+    def test_challenge_visibility_and_http_stops(self):
+        base = {"href": "https://stock.adobe.com/search", "path": "/search"}
+        for status in (200, 403):
+            r = self.run_extract("search", {**base, "status": status, "challenge": "visible"})
+            self.assertEqual(r["page_state"], "captcha")
+            self.assertEqual(r["stop_evidence"]["trigger"], "challenge_selector")
+            self.assertIn("/bframe", r["stop_evidence"]["selector"])
+            self.assertTrue(r["stop_evidence"]["visible"])
+            self.assertEqual(r["stop_evidence"]["http_status"], status)
+        for frame in ("bframe", "hcaptcha"):
+            self.assertEqual(self.run_extract("search", {**base, "challenge": "visible", "frame": frame})["page_state"], "captcha")
+            self.assertIsNone(self.run_extract("search", {**base, "challenge": "hidden", "frame": frame})["page_state"])
+        self.assertIsNone(self.run_extract("search", {**base, "challenge": "visible", "frame": "checkbox"})["page_state"])
+        r = self.run_extract("search", {**base, "challenge": "hidden", "captcha_el": True})
+        self.assertIsNone(r["page_state"])
+        for status in (403, 429):
+            r = self.run_extract("search", {**base, "status": status, "captcha_el": True})
+            self.assertEqual(r["page_state"], "restricted")
+            self.assertEqual(r["stop_evidence"]["trigger"], "http_status")
+        self.assertEqual(self.run_extract("search", {**base, "path": "/sign-in"})["page_state"], "signin")
 
     def test_http_status_reported(self):
         r = self.run_extract("search", {"href": "https://stock.adobe.com/search?k=x", "path": "/search", "status": 429})

@@ -112,7 +112,7 @@ function scopedIdentity(probe, count) {
 // count that decides success always comes from a fresh page load.
 async function stageFiles(tabId, job) {
   const base = await extract(tabId, "probe");
-  const out = { kind: "upload_stage", page_state: base && base.page_state, http_status: base && base.http_status, error: null };
+  const out = { kind: "upload_stage", page_state: base && base.page_state, stop_evidence: base && base.stop_evidence, http_status: base && base.http_status, error: null };
   if (!base || base.page_state || (base.http_status && base.http_status >= 400)) return out;
   const blocked = /submission limit reached|reached (?:the|your) submission limit/i.test(base.text || "") ? "submission_limit"
     : /not all of your contents could be submitted for moderation/i.test(base.text || "") ? "submission_blocked" : null;
@@ -167,7 +167,7 @@ async function stageFiles(tabId, job) {
   if (out.after && out.after.submission_blocked) out.error = "submission_blocked";
   if (job.scope_names && out.after) {
     const fresh = await extract(tabId, "probe");
-    if (!fresh || fresh.page_state || (fresh.http_status && fresh.http_status >= 400)) { if (fresh) { out.page_state = fresh.page_state; out.http_status = fresh.http_status; } out.error = "page_not_ready_after_stage"; return out; }
+    if (!fresh || fresh.page_state || (fresh.http_status && fresh.http_status >= 400)) { if (fresh) { out.page_state = fresh.page_state; out.stop_evidence = fresh.stop_evidence; out.http_status = fresh.http_status; } out.error = "page_not_ready_after_stage"; return out; }
     out.after.items = scopedIdentity(fresh, out.after.all_count);
     if (!out.after.items) out.error = "incomplete_identity_after_stage";
   }
@@ -193,7 +193,7 @@ async function injectMeta(tabId) { await chrome.scripting.executeScript({ target
 // Clicks happen only inside meta.js, through its allow list; Submit and Delete are never clicked. Any surprise stops with an error and the steps so far.
 async function metaFlow(tabId, job) {
   const base = await extract(tabId, "probe");
-  const out = { kind: "upload_metadata", page_state: base && base.page_state, http_status: base && base.http_status, error: null, steps: [] };
+  const out = { kind: "upload_metadata", page_state: base && base.page_state, stop_evidence: base && base.stop_evidence, http_status: base && base.http_status, error: null, steps: [] };
   if (!base || base.page_state || (base.http_status && base.http_status >= 400)) return out;
   const ms = (job.step_timeout_seconds || 90) * 1000;
   const fail = (e, st) => { out.error = e; if (st) out.detail = JSON.stringify(st).slice(0, 300); return out; };
@@ -243,7 +243,7 @@ async function metaFlow(tabId, job) {
   if (targets) {
     const sameItems = (items) => items && items.length === initial.length && initial.every((i) => items.some((j) => j.asset_id === i.asset_id && j.original_name === i.original_name));
     const afterCsv = await extract(tabId, "probe");
-    if (afterCsv && (afterCsv.page_state || (afterCsv.http_status && afterCsv.http_status >= 400))) { out.page_state = afterCsv.page_state; out.http_status = afterCsv.http_status; return fail("page_not_ready_after_csv"); }
+    if (afterCsv && (afterCsv.page_state || (afterCsv.http_status && afterCsv.http_status >= 400))) { out.page_state = afterCsv.page_state; out.stop_evidence = afterCsv.stop_evidence; out.http_status = afterCsv.http_status; return fail("page_not_ready_after_csv"); }
     if (!afterCsv || !sameItems(scopedIdentity(afterCsv, initial.length))) return fail("identity_changed_after_csv");
     for (const item of targets) {
       const sel = await pageCall(tabId, (id) => intelMetaSelectId(id), [item.asset_id]);
@@ -282,7 +282,7 @@ async function metaFlow(tabId, job) {
     const finalState = await waitMeta(tabId, ms, (s) => s.all_count === initial.length && !s.uploading);
     if (!finalState.ok) return fail("page_not_ready_after_save", finalState.st);
     const finalProbe = await extract(tabId, "probe");
-    if (finalProbe && (finalProbe.page_state || (finalProbe.http_status && finalProbe.http_status >= 400))) { out.page_state = finalProbe.page_state; out.http_status = finalProbe.http_status; return fail("page_not_ready_after_save"); }
+    if (finalProbe && (finalProbe.page_state || (finalProbe.http_status && finalProbe.http_status >= 400))) { out.page_state = finalProbe.page_state; out.stop_evidence = finalProbe.stop_evidence; out.http_status = finalProbe.http_status; return fail("page_not_ready_after_save"); }
     const finalItems = finalProbe && !finalProbe.page_state && !(finalProbe.http_status && finalProbe.http_status >= 400) && scopedIdentity(finalProbe, initial.length);
     if (!sameItems(finalItems)) return fail("identity_changed_after_save");
     const readbacks = [];
