@@ -8,7 +8,7 @@ from datetime import timedelta
 from pathlib import Path
 from unittest import mock
 
-from helpers import CFG, new_store
+from helpers import complete_as_reader, CFG, new_store
 from test_upload_stage import NOW, make_package
 from adobe_stock_analytics import parsers
 from adobe_stock_analytics import upload_metadata as M
@@ -139,7 +139,7 @@ class QueueTests(unittest.TestCase):
 
     def test_dispatch_carries_csv_hash_count_and_flags_but_no_path(self):
         q, jid = meta_queue(self.tmp)
-        job, why = q.next_job()
+        job, why = q.next_job("0.10.9")
         self.assertEqual(why, "dispatched")
         self.assertEqual((job["kind"], job["count"], len(job["files"])), ("upload_metadata", 2, 1))
         self.assertEqual(job["files"][0]["index"], 0)
@@ -148,22 +148,22 @@ class QueueTests(unittest.TestCase):
 
     def test_ok_result_is_stored_and_does_not_stop(self):
         q, jid = meta_queue(self.tmp)
-        q.next_job()
-        self.assertEqual(q.complete(jid, good_after())["status"], "ok")
+        q.next_job("0.10.9")
+        self.assertEqual(complete_as_reader(q, jid, good_after())["status"], "ok")
         self.assertEqual(q.store.get_state("metadata_result:" + jid)["tiles_with_keywords"], 2)
         self.assertIsNone(q.stop_state())
 
     def test_any_failure_stops_the_queue(self):
         q, jid = meta_queue(self.tmp)
-        q.next_job()
-        res = q.complete(jid, good_after(ai_checked=False))
+        q.next_job("0.10.9")
+        res = complete_as_reader(q, jid, good_after(ai_checked=False))
         self.assertEqual(res["reason"], "flags_not_set")
         self.assertIn("upload_metadata:flags_not_set", q.stop_state()["reason"])
 
     def test_switch_off_cancels_before_dispatch(self):
         q, jid = meta_queue(self.tmp)
         q.cfg = CFG
-        self.assertEqual(q.next_job(), (None, "upload_metadata_off"))
+        self.assertEqual(q.next_job("0.10.9"), (None, "upload_metadata_off"))
         self.assertEqual(q.job(jid)["state"], "failed")
 
 

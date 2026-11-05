@@ -7,7 +7,7 @@ import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from helpers import CFG, new_store
+from helpers import complete_as_reader, CFG, new_store
 from adobe_stock_analytics import upload_stage as U
 from adobe_stock_analytics.bridge import Bridge
 from adobe_stock_analytics.queue import Queue
@@ -126,7 +126,7 @@ class StageQueueTests(unittest.TestCase):
 
     def test_dispatch_carries_names_and_hashes_but_no_paths(self):
         q, jid, plan = staged_queue(self.tmp)
-        job, why = q.next_job()
+        job, why = q.next_job("0.10.9")
         self.assertEqual(why, "dispatched")
         self.assertEqual([f["name"] for f in job["files"]], ["a.jpg", "b.jpg"])
         self.assertNotIn("path", json.dumps(job))
@@ -134,8 +134,8 @@ class StageQueueTests(unittest.TestCase):
 
     def test_ok_when_submit_count_rises_by_files_staged_and_records_staged(self):
         q, jid, plan = staged_queue(self.tmp)
-        q.next_job()
-        res = q.complete(jid, good_payload())
+        q.next_job("0.10.9")
+        res = complete_as_reader(q, jid, good_payload())
         self.assertEqual(res["status"], "ok")
         self.assertEqual(q.store.get_state("stage_result:" + jid)["added"], 2)
         self.assertEqual({v["name"] for v in q.store.get_state("staged").values()}, {"a.jpg", "b.jpg"})
@@ -143,9 +143,9 @@ class StageQueueTests(unittest.TestCase):
 
     def test_incomplete_stage_stops_the_queue_so_it_is_not_retried(self):
         q, jid, _ = staged_queue(self.tmp)
-        q.next_job()
+        q.next_job("0.10.9")
         p = good_payload(n=1)
-        res = q.complete(jid, p)
+        res = complete_as_reader(q, jid, p)
         self.assertEqual((res["status"], res["reason"]), ("unknown", "stage_incomplete"))
         self.assertIn("upload_stage:stage_incomplete", q.stop_state()["reason"])
         self.assertIsNone(q.store.get_state("staged"))
@@ -153,39 +153,39 @@ class StageQueueTests(unittest.TestCase):
     def test_sha_mismatch_and_missing_input_stop(self):
         for err, reason in (("sha_mismatch", "stage_sha_mismatch"), ("no_upload_input", "no_upload_input")):
             q, jid, _ = staged_queue(tempfile.mkdtemp())
-            q.next_job()
-            res = q.complete(jid, {"kind": "upload_stage", "error": err, "bad_file": "a.jpg"})
+            q.next_job("0.10.9")
+            res = complete_as_reader(q, jid, {"kind": "upload_stage", "error": err, "bad_file": "a.jpg"})
             self.assertEqual(res["reason"], reason)
             self.assertIsNotNone(q.stop_state())
 
     def test_captcha_page_blocks(self):
         q, jid, _ = staged_queue(self.tmp)
-        q.next_job()
-        self.assertEqual(q.complete(jid, {"kind": "upload_stage", "page_state": "signin"})["status"], "blocked")
+        q.next_job("0.10.9")
+        self.assertEqual(complete_as_reader(q, jid, {"kind": "upload_stage", "page_state": "signin"})["status"], "blocked")
 
     def test_combined_stage_requires_empty_new_on_dispatch(self):
         q, jid, _ = staged_queue(tempfile.mkdtemp())
         params = json.loads(q.job(jid)["params"])
         params["require_empty"] = True
         q.store.db.execute("UPDATE job SET params=? WHERE job_id=?", (json.dumps(params), jid))
-        dispatched, _ = q.next_job()
+        dispatched, _ = q.next_job("0.10.9")
         self.assertTrue(dispatched["require_empty"])
-        res = q.complete(jid, {"kind": "upload_stage", "error": "new_not_empty"})
+        res = complete_as_reader(q, jid, {"kind": "upload_stage", "error": "new_not_empty"})
         self.assertEqual((res["status"], res["reason"]), ("blocked", "new_not_empty"))
         self.assertTrue(q.stop_state())
 
     def test_submission_limit_blocks_before_transfer(self):
         for error in ("submission_limit", "submission_blocked"):
             q, jid, _ = staged_queue(tempfile.mkdtemp())
-            q.next_job()
-            res = q.complete(jid, {"kind": "upload_stage", "error": error})
+            q.next_job("0.10.9")
+            res = complete_as_reader(q, jid, {"kind": "upload_stage", "error": error})
             self.assertEqual((res["status"], res["reason"]), ("blocked", error))
             self.assertIn("upload_stage:" + error, q.stop_state()["reason"])
 
     def test_turning_the_switch_off_before_dispatch_cancels_the_job(self):
         q, jid, _ = staged_queue(self.tmp)
         q.cfg = CFG
-        self.assertEqual(q.next_job(), (None, "upload_stage_off"))
+        self.assertEqual(q.next_job("0.10.9"), (None, "upload_stage_off"))
         self.assertEqual(q.job(jid)["state"], "failed")
 
 
@@ -210,7 +210,7 @@ class StageBridgeTests(unittest.TestCase):
 
     def test_file_served_only_for_a_dispatched_stage_job(self):
         self.assertEqual(self.get(f"/v1/file?job={self.jid}&i=0")[0], 404)  # still queued
-        self.q.next_job()
+        self.q.next_job("0.10.9")
         status, body = self.get(f"/v1/file?job={self.jid}&i=0")
         self.assertEqual(status, 200)
         self.assertEqual(hashlib.sha256(body).hexdigest(), self.plan["files"][0]["sha256"])
@@ -224,12 +224,12 @@ class StageBridgeTests(unittest.TestCase):
         self.assertNotIn("reload", json.loads(self.get("/v1/next")[1]))
 
     def test_changed_file_is_not_served(self):
-        self.q.next_job()
+        self.q.next_job("0.10.9")
         Path(self.plan["files"][0]["path"]).write_bytes(b"tampered")
         self.assertEqual(self.get(f"/v1/file?job={self.jid}&i=0")[0], 409)
 
     def test_not_served_after_switch_off(self):
-        self.q.next_job()
+        self.q.next_job("0.10.9")
         self.q.cfg = CFG
         self.assertEqual(self.get(f"/v1/file?job={self.jid}&i=0")[0], 404)
 

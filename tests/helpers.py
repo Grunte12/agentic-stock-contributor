@@ -40,3 +40,7 @@ def seeded_store():
     ingest_search(st, "search_matcha_p0_2.json", "matcha latte", "all", "downloads")
     ingest_search(st, "search_matcha_p0_3.json", "matcha latte", "only_ai", "relevance")
     return st
+
+
+def complete_as_reader(queue, job_id, payload):
+    return queue.complete(job_id, {**payload, "_ext": {"version": "0.10.9"}}, "0.10.9")

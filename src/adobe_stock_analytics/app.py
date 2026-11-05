@@ -7,7 +7,7 @@ from pathlib import Path
 from . import calibration, dashboard, metrics as M, portfolio, recency, related, report as R, trends, upload_metadata, upload_stage, urls, verify
 from .bridge import Bridge, load_token
 from .config import DEFAULT_DATA, ROOT, load_config, load_live_config
-from .queue import Queue
+from .queue import Queue, reader_compatibility
 from .store import Store, utcnow
 
 MAX_SCANS = 20
@@ -46,6 +46,7 @@ class App:
         return {"kind": "operational", "bridge_connected": bool(self.bridge and self.bridge.connected()),
                 "bridge_error": self.bridge_error,
                 "extension_version": self.bridge.ext_version if self.bridge else None,
+                "reader_compatibility_last_reporter": reader_compatibility(self.bridge.ext_version if self.bridge else None),
                 "server_pid": os.getpid(), "server_started_at": self.server_started_at,
                 "server_instance_id": self.server_instance_id,
                 **self.queue.status()}

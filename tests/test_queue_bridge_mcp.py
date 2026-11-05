@@ -8,7 +8,7 @@ import urllib.request
 from pathlib import Path
 from unittest import mock
 
-from helpers import CFG, fixture, new_store
+from helpers import complete_as_reader, CFG, fixture, new_store
 from adobe_stock_analytics import mcp_server
 from adobe_stock_analytics.app import App
 from adobe_stock_analytics.bridge import Bridge
@@ -32,67 +32,102 @@ REQ = {"keyword": "matcha latte", "media_type": "photo", "ai_filter": "all", "or
 
 
 class QueueTests(unittest.TestCase):
+    def test_reader_version_gate_preserves_queued_work(self):
+        for version in (None, "", "0.10.1", "0.10.8", "0.10", "0.10.9garbage", "0.10.9.1.2", "999999.1.1"):
+            q, _ = make_queue()
+            jid = q.enqueue("search", REQ)
+            before = q.status()
+            self.assertEqual(q.next_job(version), (None, "extension_upgrade_required"), version)
+            self.assertEqual(q.job(jid)["state"], "queued")
+            self.assertEqual(q.status(), before)
+        for version in ("0.10.9", "0.10.10", "1.0.0", "0.10.9.1"):
+            q, _ = make_queue()
+            jid = q.enqueue("search", REQ)
+            self.assertEqual(q.next_job(version)[0]["job_id"], jid)
+        q, _ = make_queue()
+        q.enqueue("search", REQ)
+        q.stop("captcha")
+        self.assertEqual(q.next_job("0.10.1"), (None, "stopped:captcha"))
+
+    def test_result_reader_provenance_fails_closed(self):
+        for header, ext in (("0.10.9", None), ("0.10.9", "0.10.1"), ("0.10.9", "0.10.10"),
+                            (None, "0.10.9"), ("invalid", "0.10.9")):
+            q, _ = make_queue()
+            jid = q.enqueue("search", REQ)
+            q.next_job("0.10.9")
+            payload = {**fixture("search_matcha_p0_1.json"), "_ext": {"version": ext}}
+            result = q.complete(jid, payload, header)
+            self.assertEqual((result["status"], result["reason"]), ("unknown", "reader_provenance"))
+            self.assertEqual(q.job(jid)["state"], "failed")
+            self.assertEqual(q.stop_state()["reason"], "reader_provenance")
+            self.assertEqual(q.next_job("0.10.9"), (None, "stopped:reader_provenance"))
+        q, _ = make_queue()
+        jid = q.enqueue("search", REQ)
+        q.next_job("0.10.9")
+        self.assertEqual(q.complete(jid, {"http_status": 403}, "0.10.1")["reason"], "http_403")
+        self.assertEqual(q.stop_state()["reason"], "http_403")
+
     def test_pacing_and_dispatch(self):
         q, ck = make_queue()
         a = q.enqueue("search", REQ)
         b = q.enqueue("search", {**REQ, "ai_filter": "only_ai"})
         self.assertEqual(q.enqueue("search", REQ), a)  # dedupe
-        job, why = q.next_job()
+        job, why = q.next_job("0.10.9")
         self.assertEqual((job["job_id"], why), (a, "dispatched"))
-        self.assertEqual(q.next_job()[1], "busy")
-        self.assertTrue(q.complete(a, fixture("search_matcha_p0_1.json"))["ok"])
-        job, why = q.next_job()
+        self.assertEqual(q.next_job("0.10.9")[1], "busy")
+        self.assertTrue(complete_as_reader(q, a, fixture("search_matcha_p0_1.json"))["ok"])
+        job, why = q.next_job("0.10.9")
         self.assertIsNone(job)
         self.assertTrue(why.startswith("pacing:"))
         ck.t += 25 + 5 + 1  # min gap + jitter(0.5*10)
-        self.assertEqual(q.next_job()[0]["job_id"], b)
+        self.assertEqual(q.next_job("0.10.9")[0]["job_id"], b)
 
     def test_daily_cap(self):
         cfg = {**CFG, "pacing": {**CFG["pacing"], "daily_cap": 1}}
         q, ck = make_queue(cfg)
         q.enqueue("search", REQ)
         q.enqueue("search", {**REQ, "order": "downloads"})
-        j, _ = q.next_job()
-        q.complete(j["job_id"], fixture("search_matcha_p0_1.json"))
+        j, _ = q.next_job("0.10.9")
+        complete_as_reader(q, j["job_id"], fixture("search_matcha_p0_1.json"))
         ck.t += 100
-        self.assertEqual(q.next_job(), (None, "daily_cap"))
+        self.assertEqual(q.next_job("0.10.9"), (None, "daily_cap"))
         ck.t += 86400
-        self.assertIsNotNone(q.next_job()[0])
+        self.assertIsNotNone(q.next_job("0.10.9")[0])
 
     def test_captcha_stops_and_never_retries(self):
         q, ck = make_queue()
         a = q.enqueue("search", REQ)
         q.enqueue("search", {**REQ, "order": "downloads"})
-        q.next_job()
-        res = q.complete(a, {"page_state": "captcha"})
+        q.next_job("0.10.9")
+        res = complete_as_reader(q, a, {"page_state": "captcha"})
         self.assertEqual(res["status"], "blocked")
         ck.t += 1000
-        self.assertEqual(q.next_job(), (None, "stopped:captcha"))
+        self.assertEqual(q.next_job("0.10.9"), (None, "stopped:captcha"))
         q.resume()
-        self.assertIsNotNone(q.next_job()[0])
+        self.assertIsNotNone(q.next_job("0.10.9")[0])
 
     def test_unexpected_redirect_stops_without_retry(self):
         q, ck = make_queue()
         a = q.enqueue("search", REQ)
         q.enqueue("search", {**REQ, "order": "downloads"})
-        q.next_job()
-        result = q.complete(a, {"page_state": "unexpected_redirect", "destination": "https://other-host/[redacted]"})
+        q.next_job("0.10.9")
+        result = complete_as_reader(q, a, {"page_state": "unexpected_redirect", "destination": "https://other-host/[redacted]"})
         self.assertEqual((result["status"], q.stop_state()["reason"]), ("blocked", "unexpected_redirect"))
         ck.t += 1000
-        self.assertEqual(q.next_job(), (None, "stopped:unexpected_redirect"))
+        self.assertEqual(q.next_job("0.10.9"), (None, "stopped:unexpected_redirect"))
 
     def test_http_403_stops(self):
         q, _ = make_queue()
         a = q.enqueue("search", REQ)
-        q.next_job()
-        q.complete(a, {"http_status": 429})
+        q.next_job("0.10.9")
+        complete_as_reader(q, a, {"http_status": 429})
         self.assertEqual(q.stop_state()["reason"], "http_429")
 
     def test_unknown_shape_stops_at_once(self):
         q, _ = make_queue()
         a = q.enqueue("search", REQ)
-        q.next_job()
-        q.complete(a, {"page_url": "https://stock.adobe.com/search?k=x", "rows": [], "results_text": None})
+        q.next_job("0.10.9")
+        complete_as_reader(q, a, {"page_url": "https://stock.adobe.com/search?k=x", "rows": [], "results_text": None})
         self.assertTrue(q.stop_state()["reason"].startswith("unknown_page_shape"))
 
     def test_filters_not_applied_stops_after_repeats(self):
@@ -101,8 +136,8 @@ class QueueTests(unittest.TestCase):
         for i, v in enumerate(variants):
             ck.t += 1000
             q.enqueue("search", {**REQ, "ai_filter": "only_ai", **v})
-            job, _ = q.next_job()
-            q.complete(job["job_id"], fixture("search_matcha_p0_1.json"))  # page that lacks the AI filter
+            job, _ = q.next_job("0.10.9")
+            complete_as_reader(q, job["job_id"], fixture("search_matcha_p0_1.json"))  # page that lacks the AI filter
             if i < 2:
                 self.assertIsNone(q.stop_state())
         self.assertEqual(q.stop_state()["reason"], "repeated_parse_failures")
@@ -110,9 +145,9 @@ class QueueTests(unittest.TestCase):
     def test_dispatch_timeout_stops(self):
         q, ck = make_queue()
         q.enqueue("search", REQ)
-        q.next_job()
+        q.next_job("0.10.9")
         ck.t += 1000
-        self.assertEqual(q.next_job(), (None, "stopped:dispatch_timeout"))
+        self.assertEqual(q.next_job("0.10.9"), (None, "stopped:dispatch_timeout"))
 
     def test_bad_params_rejected(self):
         q, _ = make_queue()
@@ -133,7 +168,7 @@ class BridgeTests(unittest.TestCase):
         self.b.stop()
 
     def call(self, path, body=None, token="tok", origin=None):
-        h = {"X-Intel-Token": token}
+        h = {"X-Intel-Token": token, "X-Intel-Ext": "0.10.9"}
         if origin:
             h["Origin"] = origin
         req = urllib.request.Request(self.base + path, data=json.dumps(body).encode() if body is not None else None, headers=h)
@@ -189,7 +224,7 @@ class BridgeTests(unittest.TestCase):
         jid = self.q.enqueue("search", REQ)
         code, body = self.call("/v1/next")
         self.assertEqual(body["job"]["job_id"], jid)
-        code, res = self.call("/v1/result", {"job_id": jid, "payload": fixture("search_matcha_p0_1.json")})
+        code, res = self.call("/v1/result", {"job_id": jid, "payload": {**fixture("search_matcha_p0_1.json"), "_ext": {"version": "0.10.9"}}})
         self.assertEqual((code, res["status"]), (200, "ok"))
         self.assertTrue(self.b.connected())
 

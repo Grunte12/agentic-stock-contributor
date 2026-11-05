@@ -42,6 +42,15 @@ class ParserTests(unittest.TestCase):
         r = parsers.parse_search({"results_text": "nothing here", "rows": []})
         self.assertEqual(r["reason"], "no_count_text")
 
+    def test_no_exact_match_excludes_related_rows_and_numeric_fallback(self):
+        for text in ("We couldn't find any exact matches for synthetic query. Related results are shown below.",
+                     "We couldn't find any exact matches for synthetic query. 100 results shown below."):
+            r = parsers.parse_search({"results_text": text, "rows": [{"asset_id": i} for i in range(100)]})
+            self.assertEqual((r["status"], r["results"], r["rows"]), ("ok", 0, []))
+        self.assertEqual(parsers.parse_search({"results_text": "No exact results for x", "rows": [{"asset_id": "bad"}]})["reason"], "row_shape")
+        r = parsers.parse_search({"results_text": "24 results for no exact matches for example", "rows": [{"asset_id": 1}]})
+        self.assertEqual((r["results"], len(r["rows"])), (24, 1))
+
     def test_fixture_search_ok(self):
         st = new_store()
         _, p = ingest_search(st, "search_matcha_p0_1.json", "matcha latte", "all", "relevance")

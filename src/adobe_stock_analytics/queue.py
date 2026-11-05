@@ -2,6 +2,7 @@
 import hashlib
 import json
 import random
+import re
 import threading
 import time
 from datetime import datetime, timezone
@@ -11,6 +12,22 @@ from .config import canon, upload_metadata_cfg, upload_stage_cfg
 
 SHAPE_REASONS = {"no_portfolio_shape", "no_count_text", "row_shape", "no_rows", "no_asset_id_or_title", "payload_not_object", "no_probe_shape", "no_outcomes_shape"}
 DISPATCH_TIMEOUT = 180
+MIN_READER_VERSION = "0.10.9"
+
+
+def reader_version(value):
+    if not isinstance(value, str) or len(value) > 23 or not re.fullmatch(r"(?:0|[1-9][0-9]{0,4})(?:\.(?:0|[1-9][0-9]{0,4})){2,3}", value):
+        return None
+    parts = tuple(map(int, value.split(".")))
+    return parts if all(x <= 65535 for x in parts) else None
+
+
+def reader_compatibility(value):
+    parts = reader_version(value)
+    observed = value if parts else (None if not value else "invalid")
+    return {"minimum": MIN_READER_VERSION, "observed": observed,
+            "compatible": bool(parts and parts >= reader_version(MIN_READER_VERSION))}
+
 
 
 class Queue:
@@ -100,6 +117,8 @@ class Queue:
             r = self.store.db.execute("SELECT * FROM job WHERE state='queued' ORDER BY created_at, rowid LIMIT 1").fetchone()
             if not r:
                 return None, "empty"
+            if not reader_compatibility(extension_version)["compatible"]:
+                return None, "extension_upgrade_required"
             if not urls.is_allowed(r["url"]):
                 self.store.db.execute("UPDATE job SET state='failed' WHERE job_id=?", (r["job_id"],))
                 self.stop("url_not_allowlisted")
@@ -111,8 +130,6 @@ class Queue:
                 self.store.db.execute("UPDATE job SET state='failed' WHERE job_id=?", (r["job_id"],))
                 return None, "upload_metadata_off"
             prm = json.loads(r["params"])
-            if "scope_names" in prm and (not extension_version or not extension_version.isascii() or not all(x.isdigit() for x in extension_version.split(".")) or tuple(map(int, extension_version.split("."))) < (0, 10, 8)):
-                return None, "extension_upgrade_required"
             p = self.cfg["pacing"]
             self.store.set_state("next_allowed", now + p["min_gap_seconds"] + self.rng() * p["jitter_seconds"])
             self.store.set_state("dispatch_ts", now)
@@ -154,13 +171,24 @@ class Queue:
         return files[index] if isinstance(index, int) and 0 <= index < len(files) else None
 
     # --- completion -----------------------------------------------------------
-    def complete(self, job_id, payload):
+    def complete(self, job_id, payload, extension_version=None):
         with self.lock:
             j = self.job(job_id)
             if not j or j["state"] != "dispatched":
                 return {"ok": False, "error": "job_not_dispatched"}
             params = json.loads(j["params"])
-            if j["kind"] == "search":
+            header = reader_compatibility(extension_version)
+            ext = payload.get("_ext") if isinstance(payload, dict) else None
+            result_version = ext.get("version") if isinstance(ext, dict) else None
+            result_reader = reader_compatibility(result_version)
+            blocked = parsers._blocked(payload)
+            if blocked:
+                parsed = {"status": "blocked", "reason": blocked, "parser_version": parsers.PARSER_VERSION}
+            elif not header["compatible"] or not result_reader["compatible"] or extension_version != result_version:
+                parsed = {"status": "unknown", "reason": "reader_provenance", "parser_version": parsers.PARSER_VERSION}
+                if isinstance(payload, dict):
+                    payload = {**payload, "_reader_validation": {"header": header, "result": result_reader}}
+            elif j["kind"] == "search":
                 exp = urls.expected_filters(params["keyword"], params["media_type"], params["ai_filter"], params["order"])
                 parsed = parsers.parse_search(payload, exp)
             elif j["kind"] == "asset":
@@ -201,6 +229,8 @@ class Queue:
                 self.store.set_state("failures", 0)
             elif parsed["status"] == "blocked":
                 self.stop(parsed["reason"])
+            elif parsed["reason"] == "reader_provenance":
+                self.stop("reader_provenance")
             elif parsed["reason"] in SHAPE_REASONS:
                 self.stop("unknown_page_shape:" + parsed["reason"])
             else:

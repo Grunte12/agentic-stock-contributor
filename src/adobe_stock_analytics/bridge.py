@@ -9,6 +9,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
+from .queue import reader_compatibility
+
 MAX_BODY = 8 * 1024 * 1024
 
 
@@ -47,7 +49,7 @@ class Bridge:
                     self._send(401, {"error": "token"})
                     return False
                 bridge.last_seen = time.time()
-                bridge.ext_version = self.headers.get("X-Intel-Ext", "")[:16]
+                bridge.ext_version = reader_compatibility(self.headers.get("X-Intel-Ext"))["observed"]
                 return True
 
             def _send(self, code, obj):
@@ -135,7 +137,7 @@ class Bridge:
                     return self._send(413, {"error": "size"})
                 try:
                     body = json.loads(self.rfile.read(n))
-                    res = bridge.queue.complete(body["job_id"], body["payload"])
+                    res = bridge.queue.complete(body["job_id"], body["payload"], self.headers.get("X-Intel-Ext"))
                 except (KeyError, ValueError, TypeError):
                     return self._send(400, {"error": "bad_request"})
                 self._send(200, res)

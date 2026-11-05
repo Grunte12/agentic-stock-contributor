@@ -9,7 +9,7 @@ _COUNT = re.compile(
     re.I,
 )
 # Adobe's "no exact match, related results below" heading: the exact phrase has 0 results; the rows are related assets.
-_NO_MATCH = re.compile(r"ไม่พบผลลัพธ์ที่ตรงกัน|เราไม่พบผลลัพธ์(?:\s+\S+)?\s+สำหรับ|we couldn't find (?:any )?(?:matches|results)|no (?:exact )?(?:matches|results) for", re.I)
+_NO_MATCH = re.compile(r"^\s*(?:(?:เรา)?ไม่พบผลลัพธ์ที่ตรงกัน|เราไม่พบผลลัพธ์(?:\s+\S+)?\s+สำหรับ|we couldn't find (?:any )?(?:exact )?(?:matches|results)|no (?:exact )?(?:matches|results) for)", re.I)
 BLOCKED_STATES = {"captcha", "restricted", "signin", "unexpected_redirect"}
 BLOCKED_HTTP = {403, 429}
 
@@ -65,9 +65,8 @@ def parse_search(payload, expected=None):
     rows = _norm_rows(payload.get("rows"))
     if rows is None:
         return _result("unknown", "row_shape")
-    results = parse_count(payload.get("results_text"))
-    if results is None and _NO_MATCH.search(payload.get("results_text") or ""):
-        results = 0
+    no_match = bool(_NO_MATCH.search(payload.get("results_text") or ""))
+    results = 0 if no_match else parse_count(payload.get("results_text"))
     if results is None:
         return _result("unknown", "no_count_text", rows=rows)
     on_page = urls.read_back(payload.get("page_url") or "")
@@ -77,7 +76,7 @@ def parse_search(payload, expected=None):
                 or on_page["gentech"] != want["gentech"] or on_page["order"] != want["order"]:
             return _result("unknown", "filters_not_applied", filters_on_page=on_page, rows=rows)
     return _result("ok", results=results, results_text=payload.get("results_text"),
-                   filters_on_page=on_page, rows=rows)
+                   filters_on_page=on_page, rows=[] if no_match else rows)
 
 
 def parse_contributor(payload):

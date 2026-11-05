@@ -52,4 +52,4 @@ class ScopedTests(unittest.TestCase):
         q.enqueue("upload_stage", {"package_digest": "x", "files": [], "scope_names": ["a.jpg"]})
         self.assertEqual(q.next_job("0.10.7"), (None, "extension_upgrade_required"))
         self.assertEqual(q.next_job(None), (None, "extension_upgrade_required"))
-        self.assertEqual(q.next_job("0.10.8")[0]["scope_names"], ["a.jpg"])
+        self.assertEqual(q.next_job("0.10.9")[0]["scope_names"], ["a.jpg"])
