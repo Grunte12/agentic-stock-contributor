@@ -1,8 +1,10 @@
 """Minimal MCP server over stdio (newline-delimited JSON-RPC 2.0). No third-party dependency."""
 import hashlib
 import json
+import math
 import os
 import sys
+import threading
 from collections import Counter
 from pathlib import Path
 
@@ -202,7 +204,7 @@ def _compact_result(app, name, result):
     return receipt
 
 
-def handle(app, msg):
+def handle(app, msg, cancel_event=None):
     mid, method, params = msg.get("id"), msg.get("method"), msg.get("params") or {}
     if method == "initialize":
         return {"protocolVersion": params.get("protocolVersion", "2025-06-18"), "capabilities": {"tools": {}},
@@ -220,7 +222,13 @@ def handle(app, msg):
         try:
             if extra:
                 raise ValueError(f"unexpected arguments: {sorted(extra)}")
-            res = _compact_result(app, name, getattr(app, name)(**args))
+            if name == "stock_wait" and cancel_event is not None:
+                result = app.stock_wait(**args, _cancel_event=cancel_event)
+                if cancel_event.is_set():
+                    return None
+            else:
+                result = getattr(app, name)(**args)
+            res = _compact_result(app, name, result)
             return {"content": [{"type": "text", "text": json.dumps(res, ensure_ascii=False)}], "isError": False}
         except Exception as e:  # tool errors are reported to the agent, not raised
             try:
@@ -233,28 +241,88 @@ def handle(app, msg):
 
 def serve(app, stdin=None, stdout=None):
     stdin, stdout = stdin or sys.stdin, stdout or sys.stdout
-    for line in stdin:
-        line = line.strip()
-        if not line:
-            continue
+    output_lock = threading.Lock()
+    pending_lock = threading.Lock()
+    pending = {}
+
+    def valid_id(value):
+        return type(value) in (str, int, float) and (type(value) is not float or math.isfinite(value))
+
+    def respond(out):
+        with output_lock:
+            stdout.write(json.dumps(out, ensure_ascii=False) + "\n")
+            stdout.flush()
+
+    def stop_waits():
+        with pending_lock:
+            workers = list(pending.values())
+            for event, _ in workers:
+                event.set()
+        for _, worker in workers:
+            worker.join()
+
+    def run_wait(msg, event):
         try:
-            msg = json.loads(line)
-        except ValueError:
-            continue
-        if "id" not in msg:  # notification
-            continue
-        try:
-            out = {"jsonrpc": "2.0", "id": msg["id"], "result": handle(app, msg)}
-        except KeyError:
-            out = {"jsonrpc": "2.0", "id": msg["id"], "error": {"code": -32601, "message": "method not found"}}
-        stdout.write(json.dumps(out, ensure_ascii=False) + "\n")
-        stdout.flush()
-        if app.restart_requested:
-            app.restart_requested = False
-            if app.bridge:
-                app.bridge.stop()
-            original = getattr(sys, "orig_argv", None) or sys.argv
-            os.execv(sys.executable, [sys.executable, *original[1:]])
+            result = handle(app, msg, event)
+            with pending_lock:
+                if not event.is_set():
+                    respond({"jsonrpc": "2.0", "id": msg["id"], "result": result})
+                pending.pop(msg["id"], None)
+        finally:
+            with pending_lock:
+                if msg["id"] in pending and pending[msg["id"]][0] is event:
+                    pending.pop(msg["id"], None)
+
+    try:
+        for line in stdin:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                msg = json.loads(line)
+            except ValueError:
+                continue
+            if "id" not in msg:
+                if msg.get("method") == "notifications/cancelled":
+                    params = msg.get("params")
+                    request_id = params.get("requestId") if isinstance(params, dict) else None
+                    with pending_lock:
+                        if valid_id(request_id) and request_id in pending:
+                            pending[request_id][0].set()
+                continue
+            with pending_lock:
+                duplicate = valid_id(msg["id"]) and msg["id"] in pending
+            if duplicate:
+                respond({"jsonrpc": "2.0", "id": None, "error": {"code": -32600, "message": "duplicate request ID"}})
+                continue
+            is_wait = msg.get("method") == "tools/call" and (msg.get("params") or {}).get("name") == "stock_wait"
+            if is_wait:
+                if not valid_id(msg["id"]):
+                    respond({"jsonrpc": "2.0", "id": None, "error": {"code": -32600, "message": "invalid request ID"}})
+                    continue
+                with pending_lock:
+                    if len(pending) >= 8 or msg["id"] in pending:
+                        respond({"jsonrpc": "2.0", "id": msg["id"], "error": {"code": -32603, "message": "wait capacity exceeded or duplicate request ID"}})
+                    else:
+                        event = threading.Event()
+                        worker = threading.Thread(target=run_wait, args=(msg, event))
+                        pending[msg["id"]] = (event, worker)
+                        worker.start()
+                continue
+            try:
+                out = {"jsonrpc": "2.0", "id": msg["id"], "result": handle(app, msg)}
+            except KeyError:
+                out = {"jsonrpc": "2.0", "id": msg["id"], "error": {"code": -32601, "message": "method not found"}}
+            respond(out)
+            if app.restart_requested:
+                stop_waits()
+                app.restart_requested = False
+                if app.bridge:
+                    app.bridge.stop()
+                original = getattr(sys, "orig_argv", None) or sys.argv
+                os.execv(sys.executable, [sys.executable, *original[1:]])
+    finally:
+        stop_waits()
 
 
 def main():

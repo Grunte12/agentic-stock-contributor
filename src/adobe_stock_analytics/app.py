@@ -65,14 +65,16 @@ class App:
     def stock_contributor(self, creator_id):
         return {"job_ids": [self.queue.enqueue("contributor", {"creator_id": creator_id})]}
 
-    def stock_wait(self, job_ids, timeout_seconds=60):
-        end = time.time() + min(max(int(timeout_seconds), 1), 120)
+    def stock_wait(self, job_ids, timeout_seconds=60, _cancel_event=None):
+        end = time.monotonic() + min(max(int(timeout_seconds), 1), 120)
         while True:
+            if _cancel_event and _cancel_event.is_set():
+                return None
             jobs = [self.queue.job(j) for j in job_ids]
             if any(j is None for j in jobs):
                 raise ValueError("unknown job id")
             pending = [j for j in jobs if j["state"] in ("queued", "dispatched")]
-            if not pending or self.queue.stop_state() or time.time() >= end:
+            if not pending or self.queue.stop_state() or time.monotonic() >= end:
                 stop = self.queue.stop_state()
                 reason = None
                 next_action = None
@@ -98,7 +100,10 @@ class App:
                         next_action = "call stock_wait again with only these unfinished job ids"
                 return {"jobs": [{"job_id": j["job_id"], "kind": j["kind"], "state": j["state"], "obs_id": j["obs_id"]}
                                  for j in jobs], "stop": stop, "queue_reason": reason, "next": next_action}
-            time.sleep(1)
+            if _cancel_event:
+                _cancel_event.wait(min(1, max(0, end - time.monotonic())))
+            else:
+                time.sleep(min(1, max(0, end - time.monotonic())))
 
     def stock_observation(self, obs_id):
         o = self.store.observation(obs_id)
